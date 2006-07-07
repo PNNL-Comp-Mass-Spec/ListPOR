@@ -1,0 +1,13 @@
+ListPOR Change Log
+
+Version 2.2.2104.30011; October 5, 2005
+ 	- Updated to use PRISM.dll
+	- Added a menu bar to help de-clutter the window
+	- Added Apache License, Version 2.0 header
+
+Version 2.2.2040.31891; August 2, 2005
+ 	- Updated to use new version of clsStatDoubles.vb, where standard deviation is computed more rigorously
+		- Switch was made to reduce round-off error that can happen when all but a few of the values are equal to or very close to the mean
+
+Version 1.1.1754; October 20, 2004
+	- Stable release
