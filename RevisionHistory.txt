@@ -1,5 +1,10 @@
 ListPOR Change Log
 
+Version 1.3.6465; September 13, 2017
+	- Add Assume Sorted checkbox to the GUI
+	- Add /conf switch
+	- Rename switch /S to /Sorted
+
 Version 1.3.6464; September 12, 2017
 	- Update to .NET 4.6.2
 

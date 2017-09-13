@@ -46,21 +46,35 @@ ListPOR can be run in batch mode from the Windows command line.  Syntax:
 
 ```
 ListPOR.exe 
-  /I:InputFilePath [/O:OutputFilePath] [/S] [/L] 
-  [/M:MinimumFinalDataPointCount] [/C:ColumnCount]
+  /I:InputFilePath [/O:OutputFilePath] [/Sorted] [/L] 
+  [/M:MinimumFinalDataPointCount] [/C:ColumnCount] [/Conf:#]
 ```
 
-The input file path can contain the wildcard character * and should point to a fasta file or tab-delimited text file.
+The input file is a tab-delimited data file with one or more columns of data; specify it using 
+/I or by simply using the file path (use double quotes if spaces in the path)
 
-The output file path is optional. If omitted, the output file will be created in the same folder as the input file, but with the extension '.filtered' added.
+The output file path is optional. If omitted, the output file will be created in the same folder 
+as the input file, but with _filtered appended to the name
 
-/S indicates that the input file is already sorted by group.  This allows very large files to be processed, since the entire file does not need to be cached in memory.
+/Sorted indicates that the input file is already sorted by group. This allows very large files 
+to be processed, since the entire file does not need to be cached in memory. It is also useful 
+for obtaining a filtered file with data in the exact same order as the input file.
 
-/L will cause the program to convert the data to symmetric values, prior to looking for outliers.  This is appropriate for data where a value of 1 is unchanged, >1 is an increase, and <1 is a decrease.  This is not appropriate for data with values of 0 or less than 0.
+/L will cause the program to convert the data to symmetric values, prior to looking for outliers. 
+This is appropriate for data where a value of 1 is unchanged, >1 is an increase, and <1 is a decrease. This is not appropriate for data with values of 0 or less than 0.
 
-/M is the minimum number of data points that must remain in the group.  It cannot be less than 3
+/M is the minimum number of data points that must remain in the group. It cannot be less than 3
 
-/C:1 can be used to indicate that there is only 1 column of data to analyze; if other columns of text are present after the first column, they will be written to the output file, but will not be considered for outlier removal.  Use /C:2 to specify that there are two columns to be examined: a Key column and a Value column.  Again, additional columns will be written to disk, but not utilized for comparison purposes. 
+/C:1 can be used to indicate that there is only 1 column of data to analyze; if other columns 
+of text are present after the first column, they will be written to the output file, 
+but will not be considered for outlier removal. Use /C:2 to specify that there are two columns 
+to be examined: a Key column and a Value column. Again, additional columns will be written to disk, 
+but not utilized for comparison purposes. 
+
+/Conf can be used to specify the confidence level; options are
+* /Conf:95
+* /Conf:97
+* /Conf:99
 
 ## Contacts
 

@@ -34,6 +34,7 @@ Name: desktopicon; Description: {cm:CreateDesktopIcon}; GroupDescription: {cm:Ad
 
 [Icons]
 Name: {commondesktop}\ListPOR; Filename: {app}\ListPOR.exe; Tasks: desktopicon; Comment: ListPOR
+Name: {group}\ListPOR;         Filename: {app}\ListPOR.exe; Comment: ListPOR
 
 [Setup]
 AppName=ListPOR
