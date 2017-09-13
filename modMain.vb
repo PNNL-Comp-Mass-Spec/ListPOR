@@ -1,62 +1,64 @@
 Option Strict On
 
+Imports System.IO
+Imports System.Reflection
+Imports PRISM
 ' Wrapper functions to call clsListPOR or show frmListPOR
 '
 ' -------------------------------------------------------------------------------
 ' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
 ' Program started August 13, 2004
 
-' E-mail: matthew.monroe@pnl.gov or matt@alchemistmatt.com
-' Website: http://ncrr.pnl.gov/ or http://www.sysbio.org/resources/staff/
+' E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com
+' Website: http://panomics.pnnl.gov/ or http://omics.pnl.gov or http://www.sysbio.org/resources/staff/
 ' -------------------------------------------------------------------------------
-' 
+'
 ' Licensed under the Apache License, Version 2.0; you may not use this file except
-' in compliance with the License.  You may obtain a copy of the License at 
+' in compliance with the License.  You may obtain a copy of the License at
 ' http://www.apache.org/licenses/LICENSE-2.0
 '
-' Notice: This computer software was prepared by Battelle Memorial Institute, 
-' hereinafter the Contractor, under Contract No. DE-AC05-76RL0 1830 with the 
-' Department of Energy (DOE).  All rights in the computer software are reserved 
-' by DOE on behalf of the United States Government and the Contractor as 
-' provided in the Contract.  NEITHER THE GOVERNMENT NOR THE CONTRACTOR MAKES ANY 
-' WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS 
-' SOFTWARE.  This notice including this sentence must appear on any copies of 
+' Notice: This computer software was prepared by Battelle Memorial Institute,
+' hereinafter the Contractor, under Contract No. DE-AC05-76RL0 1830 with the
+' Department of Energy (DOE).  All rights in the computer software are reserved
+' by DOE on behalf of the United States Government and the Contractor as
+' provided in the Contract.  NEITHER THE GOVERNMENT NOR THE CONTRACTOR MAKES ANY
+' WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS
+' SOFTWARE.  This notice including this sentence must appear on any copies of
 ' this computer software.
 
 Module modMain
 
-    Public Const PROGRAM_DATE As String = "October 5, 2005"
+    Private Declare Auto Function ShowWindow Lib "user32.dll" (hWnd As IntPtr, nCmdShow As Integer) As Boolean
+    Private Declare Auto Function GetConsoleWindow Lib "kernel32.dll" () As IntPtr
+    Private Const SW_HIDE As Integer = 0
+    ' Private Const SW_SHOW As Integer = 5
 
-    Private mMainWindow As New frmListPOR
+    Public Const PROGRAM_DATE As String = "September 12, 2017"
 
     Private mInputFilePath As String
     Private mOutputFilePath As String
 
     Private mListPORClass As clsListPOR
 
-    Private mQuietMode As Boolean
-
     Public Function Main() As Integer
         ' Returns 0 if no error, error code if an error
 
         Dim intReturnCode As Integer
-        Dim objParseCommandLine As New SharedVBNetRoutines.clsParseCommandLine
+        Dim objParseCommandLine As New clsParseCommandLine()
         Dim blnProceed As Boolean
         Dim blnShowForm As Boolean
 
         intReturnCode = 0
-        mInputFilePath = ""
-        mOutputFilePath = ""
+        mInputFilePath = String.Empty
+        mOutputFilePath = String.Empty
 
-        mListPORClass = New clsListPOR
+        mListPORClass = New clsListPOR()
 
         mListPORClass.AssumeSortedInputFile = False
         mListPORClass.RemoveMultipleValues = True
         mListPORClass.ConfidenceLevel = clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants.e95Pct
         mListPORClass.MinFinalValueCount = 3
         mListPORClass.ColumnCountOverride = 0
-
-        mQuietMode = False
 
         Try
             blnProceed = False
@@ -69,32 +71,34 @@ Module modMain
             End If
 
             If blnShowForm And Not objParseCommandLine.NeedToShowHelp Then
-                mMainWindow.ShowDialog()
-            ElseIf Not blnProceed OrElse objParseCommandLine.NeedToShowHelp OrElse objParseCommandLine.ParameterCount = 0 OrElse mInputFilePath.Length = 0 Then
+                ' Hide the console
+                Dim hWndConsole As IntPtr
+                hWndConsole = GetConsoleWindow()
+                ShowWindow(hWndConsole, SW_HIDE)
+
+                Dim mainWindow = New frmListPOR()
+                mainWindow.ShowDialog()
+            ElseIf Not blnProceed OrElse objParseCommandLine.NeedToShowHelp OrElse objParseCommandLine.ParameterCount = 0 OrElse String.IsNullOrWhiteSpace(mInputFilePath) Then
                 ShowProgramHelp()
                 intReturnCode = -1
             Else
 
-                With mListPORClass
+                If String.IsNullOrWhiteSpace(mOutputFilePath) Then
+                    mOutputFilePath = clsListPOR.AutoGenerateOutputFileName(mInputFilePath)
+                End If
 
-                    If mOutputFilePath.Length = 0 Then
-                        mOutputFilePath = mInputFilePath & ".filtered"
-                    End If
+                intReturnCode = mListPORClass.RemoveOutliersFromListInFile(mInputFilePath, mOutputFilePath)
 
-                    intReturnCode = .RemoveOutliersFromListInFile(mInputFilePath, mOutputFilePath)
-                End With
 
-                If intReturnCode <> 0 AndAlso Not mQuietMode Then
-                    MsgBox("Error while processing: ReturnCode = " & intReturnCode.ToString, MsgBoxStyle.Exclamation Or MsgBoxStyle.OKOnly, "Error")
+                If intReturnCode <> 0 Then
+                    ConsoleMsgUtils.ShowError("Error while processing: ReturnCode = " & intReturnCode)
+                    Threading.Thread.Sleep(1500)
                 End If
             End If
 
         Catch ex As Exception
-            If mQuietMode Then
-                Throw ex
-            Else
-                MsgBox("Error occurred: " & ControlChars.NewLine & ex.Message, MsgBoxStyle.Exclamation Or MsgBoxStyle.OKOnly, "Error")
-            End If
+            ConsoleMsgUtils.ShowError("Error while processing", ex)
+            Threading.Thread.Sleep(1500)
             intReturnCode = -1
         End Try
 
@@ -102,11 +106,11 @@ Module modMain
 
     End Function
 
-     Private Function SetOptionsUsingCommandLineParameters(ByVal objParseCommandLine As SharedVBNetRoutines.clsParseCommandLine) As Boolean
+    Private Function SetOptionsUsingCommandLineParameters(objParseCommandLine As clsParseCommandLine) As Boolean
         ' Returns True if no problems; otherwise, returns false
 
-        Dim strValue As String
-        Dim strValidParameters() As String = New String() {"I", "O", "S", "L", "M", "C", "Q"}
+        Dim strValue = String.Empty
+        Dim strValidParameters = New String() {"I", "O", "S", "L", "M", "C"}
 
         Try
             ' Make sure no invalid parameters are present
@@ -130,70 +134,52 @@ Module modMain
                             mListPORClass.ColumnCountOverride = CType(strValue, Integer)
                         End If
                     End If
-                    If .RetrieveValueForParameter("Q", strValue) Then mQuietMode = True
+
                 End With
 
                 Return True
             End If
 
         Catch ex As Exception
-            If mQuietMode Then
-                Throw New System.Exception("Error parsing the command line parameters", ex)
-            Else
-                MsgBox("Error parsing the command line parameters: " & ControlChars.NewLine & ex.Message, MsgBoxStyle.Exclamation Or MsgBoxStyle.OKOnly, "Error")
-            End If
+            ConsoleMsgUtils.ShowError("Error parsing the command line parameters", ex)
+            Threading.Thread.Sleep(1500)
+            Return False
         End Try
 
     End Function
 
     Private Sub ShowProgramHelp()
 
-        Dim strSyntax As String
-        Dim ioPath As System.IO.Path
-
         Try
 
-            strSyntax = "ListPOR (List Parser for Outlier Removal)" & ControlChars.NewLine
-            strSyntax &= "Reads a tab-delimeted file of groups of data and removes outliers from each group of data points." & ControlChars.NewLine
-            strSyntax &= "Program syntax:" & ControlChars.NewLine & ioPath.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location)
-            strSyntax &= " /I:InputFilePath [/O:OutputFilePath] [/S] [/L] [/M:MinimumFinalDataPointCount] [/C:ColumnCount] [/Q]" & ControlChars.NewLine & ControlChars.NewLine
-            strSyntax &= "The output file path is optional.  If omitted, the output file will be created in the same folder as the input file, but with the extension '.filtered' added." & ControlChars.NewLine
-            strSyntax &= " /S indicates that the input file is already sorted by group.  This allows very large files to be processed, since the entire file does not need to be cached in memory." & ControlChars.NewLine
-            strSyntax &= " /L will cause the program to shifted symmetric values, prior to looking for outliers.  This is appropriate for data where a value of 1 is unchanged, >1 is an increase, and <1 is a decrease.  This is not appropriate for data with values of 0 or less than 0." & ControlChars.NewLine
-            strSyntax &= " /M is the minimum number of data points that must remain in the group.  It cannot be less than 3" & ControlChars.NewLine
-            strSyntax &= " /C:1 can be used to indicate that there is only 1 column of data to analyze; if other columns of text are present after the first column, they will be written to the output file, but will not be considered for outlier removal.  Use /C:2 to specify that there are two columns to be examined: a Key column and a Value column.  Again, additional columns will be written to disk, but not utilized for comparison purposes. " & ControlChars.NewLine
-            strSyntax &= "The optional /Q switch will suppress all error messages." & ControlChars.NewLine  & ControlChars.NewLine
+            Console.WriteLine("ListPOR (List Parser for Outlier Removal)")
+            Console.WriteLine("Reads a tab-delimeted file of groups of data and removes outliers from each group of data points.")
+            Console.WriteLine()
+            Console.WriteLine("Program syntax:" & Path.GetFileName(Assembly.GetExecutingAssembly().Location))
+            Console.WriteLine(" /I:InputFilePath [/O:OutputFilePath] [/S] [/L] [/M:MinimumFinalDataPointCount] [/C:ColumnCount] [/Q]")
+            Console.WriteLine()
+            Console.WriteLine("The output file path is optional.  If omitted, the output file will be created in the same folder as the input file, but with _filtered appended to the name")
+            Console.WriteLine(" /S indicates that the input file is already sorted by group.  This allows very large files to be processed, since the entire file does not need to be cached in memory.")
+            Console.WriteLine(" /L will cause the program to convert the data to symmetric values, prior to looking for outliers.  This is appropriate for data where a value of 1 is unchanged, >1 is an increase, and <1 is a decrease.  This is not appropriate for data with values of 0 or less than 0.")
+            Console.WriteLine(" /M is the minimum number of data points that must remain in the group.  It cannot be less than 3")
+            Console.WriteLine(" /C:1 can be used to indicate that there is only 1 column of data to analyze; if other columns of text are present after the first column, they will be written to the output file, but will not be considered for outlier removal.  Use /C:2 to specify that there are two columns to be examined: a Key column and a Value column.  Again, additional columns will be written to disk, but not utilized for comparison purposes. ")
+            Console.WriteLine()
 
-            strSyntax &= "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2004" & ControlChars.NewLine & ControlChars.NewLine
+            Console.WriteLine("Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2004")
 
-            strSyntax &= "This is version " & System.Windows.Forms.Application.ProductVersion & " (" & PROGRAM_DATE & ")" & ControlChars.NewLine & ControlChars.NewLine
+            Console.WriteLine("This is version " & Application.ProductVersion & " (" & PROGRAM_DATE & ")")
 
-            strSyntax &= "E-mail: matthew.monroe@pnl.gov or matt@alchemistmatt.com" & ControlChars.NewLine
-            strSyntax &= "Website: http://ncrr.pnl.gov/ or http://www.sysbio.org/resources/staff/" & ControlChars.NewLine & ControlChars.NewLine
+            Console.WriteLine("E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com")
+            Console.WriteLine("Website: http://panomics.pnnl.gov/ or http://omics.pnl.gov or http://www.sysbio.org/resources/staff/")
+            Console.WriteLine()
 
-            strSyntax &= "Licensed under the Apache License, Version 2.0; you may not use this file except in compliance with the License.  "
-            strSyntax &= "You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0" & ControlChars.NewLine & ControlChars.NewLine
+            Console.WriteLine("Licensed under the Apache License, Version 2.0; you may not use this file except in compliance with the License.")
+            Console.WriteLine("You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0")
 
-            strSyntax &= "Notice: This computer software was prepared by Battelle Memorial Institute, "
-            strSyntax &= "hereinafter the Contractor, under Contract No. DE-AC05-76RL0 1830 with the "
-            strSyntax &= "Department of Energy (DOE).  All rights in the computer software are reserved "
-            strSyntax &= "by DOE on behalf of the United States Government and the Contractor as "
-            strSyntax &= "provided in the Contract.  NEITHER THE GOVERNMENT NOR THE CONTRACTOR MAKES ANY "
-            strSyntax &= "WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS "
-            strSyntax &= "SOFTWARE.  This notice including this sentence must appear on any copies of "
-            strSyntax &= "this computer software." & ControlChars.NewLine
-
-
-            If Not mQuietMode Then
-                MsgBox(strSyntax, MsgBoxStyle.Information Or MsgBoxStyle.OKOnly, "Syntax")
-            End If
 
         Catch ex As Exception
-            If mQuietMode Then
-                Throw New System.Exception("Error displaying the program syntax", ex)
-            Else
-                MsgBox("Error displaying the program syntax: " & ControlChars.NewLine & ex.Message, MsgBoxStyle.Exclamation Or MsgBoxStyle.OKOnly, "Error")
-            End If
+            ConsoleMsgUtils.ShowError("Error displaying the program syntax", ex)
+            Threading.Thread.Sleep(1500)
         End Try
 
     End Sub
