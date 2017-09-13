@@ -448,6 +448,17 @@ Public Class frmListPOR
         Me.Close()
     End Sub
 
+    Private Function GetSettingsFilePath() As String
+
+        Dim strSettingsFilePathLocal As String
+        strSettingsFilePathLocal = clsProcessFilesOrFoldersBase.GetSettingsFilePathLocal("ListPOR", XML_SETTINGS_FILE_NAME)
+
+        clsProcessFilesOrFoldersBase.CreateSettingsFileIfMissing(strSettingsFilePathLocal)
+
+        Return strSettingsFilePathLocal
+
+    End Function
+
     Private Sub InitializeControls(Optional ByVal blnRetainFilePaths As Boolean = False)
 
         Try
@@ -650,10 +661,9 @@ Public Class frmListPOR
         Try
             InitializeControls(True)
 
-            strFilePath = System.IO.Path.GetDirectoryName(Application.ExecutablePath)
-            strFilePath = System.IO.Path.Combine(strFilePath, XML_SETTINGS_FILENAME)
+            strFilePath = GetSettingsFilePath()
 
-            Dim objXmlFile As New PRISM.Files.XmlSettingsFileAccessor
+            Dim objXmlFile As New XmlSettingsFileAccessor()
 
             If objXmlFile.LoadSettings(strFilePath) Then
                 txtInputFilePath.Text = objXmlFile.GetParam(XML_FILE_OPTIONS_SECTION, "InputFilePath", txtInputFilePath.Text)
@@ -686,10 +696,9 @@ Public Class frmListPOR
         Dim strFilePath As String
 
         Try
-            strFilePath = System.IO.Path.GetDirectoryName(Application.ExecutablePath)
-            strFilePath = System.IO.Path.Combine(strFilePath, XML_SETTINGS_FILENAME)
+            strFilePath = GetSettingsFilePath()
 
-            Dim objXmlFile As New PRISM.Files.XmlSettingsFileAccessor
+            Dim objXmlFile As New XmlSettingsFileAccessor()
 
             If objXmlFile.LoadSettings(strFilePath) Then
 
