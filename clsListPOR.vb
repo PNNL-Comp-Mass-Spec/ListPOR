@@ -457,7 +457,7 @@ Public Class clsListPOR
 
                         If Not strLineIn Is Nothing AndAlso strLineIn.Length > 0 Then
                             ' Split the line, allowing at most 3 columns (if more than 3, then all data is lumped into the third column)
-                            strSplitLine = strLineIn.Split(strDelimList, 3)
+                            Dim strSplitLine = strLineIn.Split(strDelimList, 3)
 
                             If Not blnDataBlockReached Then
                                 ' Haven't found the data block yet, is this a header line?
@@ -482,8 +482,22 @@ Public Class clsListPOR
                                         blnDataBlockReached = True
                                         columnCount = 2
                                     Else
-                                        strHeaderLine = strLineIn
+                                        If String.IsNullOrWhiteSpace(strHeaderLine) Then
+                                            strHeaderLine = strLineIn
+                                        Else
+                                            ' Header line already found, and this line does not start with text
+                                            ' If it starts with a number, filter data using only the first column of data
+                                            If IsNumeric(strSplitLine(0)) Then
+                                                OnStatusEvent("Removing outliers using values in the first column of the input file")
+                                                blnDataBlockReached = True
+                                                columnCount = 1
+                                            Else
+                                                ' Update the header line
+                                                strHeaderLine = strLineIn
+                                            End If
+                                        End If
                                     End If
+
                                 ElseIf strSplitLine.Length = 1 Then
                                     If IsNumeric(strSplitLine(0)) Then
                                         OnStatusEvent("Input file only has one column of data; removing outliers")
