@@ -406,6 +406,8 @@ Public Class clsListPOR
 
             mMostRecentOutputFile = destFile.FullName
 
+            OnStatusEvent("Creating " & destFile.FullName)
+
             Using swOutFile = New StreamWriter(New FileStream(destFile.FullName, FileMode.Create, FileAccess.Write, FileShare.Read))
 
                 ' Assume the column delimeter is a tab, unless the input file ends in .csv
@@ -428,6 +430,8 @@ Public Class clsListPOR
                 End If
 
                 ' Open the input file
+                OnStatusEvent("Opening " & sourceFile.FullName)
+
                 Using srInFile = New StreamReader(New FileStream(sourceFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 
                     mFileLengthBytes = srInFile.BaseStream.Length
@@ -459,18 +463,22 @@ Public Class clsListPOR
                                 ' Haven't found the data block yet, is this a header line?
                                 If columnCount = 1 Then
                                     If strSplitLine.Length > 0 AndAlso IsNumeric(strSplitLine(0)) Then
+                                        OnStatusEvent("Removing outliers using values in the first column of the input file")
                                         blnDataBlockReached = True
                                     Else
                                         strHeaderLine = strLineIn
                                     End If
                                 ElseIf columnCount = 2 Then
                                     If strSplitLine.Length > 1 AndAlso IsNumeric(strSplitLine(1)) Then
+                                        OnStatusEvent("Removing outliers using values in the second column of the input file, grouping on data in the first column")
                                         blnDataBlockReached = True
                                     Else
                                         strHeaderLine = strLineIn
                                     End If
                                 ElseIf strSplitLine.Length >= 2 Then
+                                    ' Auto-determine column count
                                     If Not IsNumeric(strSplitLine(0)) And IsNumeric(strSplitLine(1)) Then
+                                        OnStatusEvent("Removing outliers using values in the second column of the input file, grouping on data in the first column")
                                         blnDataBlockReached = True
                                         columnCount = 2
                                     Else
@@ -478,6 +486,7 @@ Public Class clsListPOR
                                     End If
                                 ElseIf strSplitLine.Length = 1 Then
                                     If IsNumeric(strSplitLine(0)) Then
+                                        OnStatusEvent("Input file only has one column of data; removing outliers")
                                         blnDataBlockReached = True
                                         columnCount = 1
                                     Else
@@ -577,6 +586,7 @@ Public Class clsListPOR
 
                     If lstData.Count > 0 Then
 
+                        OnStatusEvent("Sorting the data")
 
                         ' Sort udtData by Key, then step through the list and process each block, writing to disk as we go
                         Dim sortedData = (From item In lstData Order By item.Key, item.ValueDbl Select item).ToList()
@@ -584,6 +594,8 @@ Public Class clsListPOR
                         intIndexBlockStart = 0
                         percentCompleteAtStart = nextPercentComplete
                         nextPercentComplete = 100
+
+                        OnStatusEvent("Writing results")
 
                         Dim sortedDataCount = sortedData.Count
                         For i = 1 To sortedDataCount - 1
@@ -621,6 +633,8 @@ Public Class clsListPOR
                 End If
 
             End Using
+
+            OnStatusEvent("Processing complete")
 
         Catch ex As Exception
             SetLocalErrorCode(eListPORErrorCodeCodes.ErrorWritingOutputFile)

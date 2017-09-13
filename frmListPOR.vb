@@ -845,5 +845,6 @@ Public Class frmListPOR
 
     Private Sub mListPOR_StatusEvent(message As String) Handles mListPOR.StatusEvent
         txtStatus.Text = message
+        Application.DoEvents()
     End Sub
 End Class

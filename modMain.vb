@@ -37,10 +37,10 @@ Module modMain
 
     Public Const PROGRAM_DATE As String = "September 12, 2017"
 
+    Private WithEvents mListPORClass As clsListPOR
     Private mInputFilePath As String
     Private mOutputFilePath As String
 
-    Private mListPORClass As clsListPOR
     ''' <summary>
     ''' Entry method
     ''' </summary>
@@ -189,4 +189,19 @@ Module modMain
 
     End Sub
 
+    Private Sub mListPORClass_DebugEvent(message As String) Handles mListPORClass.DebugEvent
+        ConsoleMsgUtils.ShowDebug(message)
+    End Sub
+
+    Private Sub mListPORClass_ErrorEvent(message As String, ex As Exception) Handles mListPORClass.ErrorEvent
+        ConsoleMsgUtils.ShowError(message)
+    End Sub
+
+    Private Sub mListPORClass_StatusEvent(message As String) Handles mListPORClass.StatusEvent
+        Console.WriteLine(message)
+    End Sub
+
+    Private Sub mListPORClass_WarningEvent(message As String) Handles mListPORClass.WarningEvent
+        ConsoleMsgUtils.ShowWarning(message)
+    End Sub
 End Module
