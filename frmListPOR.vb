@@ -16,8 +16,9 @@ Public Class frmListPOR
         InitializeComponent()
 
         'Add any initialization after the InitializeComponent() call
-        mListPOR = New clsListPOR
+        mListPOR = New clsListPOR()
 
+        txtStatus.Text = String.Empty
     End Sub
 
     'Form overrides dispose to clean up the component list.
@@ -65,6 +66,7 @@ Public Class frmListPOR
     Friend WithEvents cmdExit As System.Windows.Forms.Button
     Friend WithEvents cmdStart As System.Windows.Forms.Button
     Friend WithEvents mnuHelpOverview As System.Windows.Forms.MenuItem
+    Friend WithEvents txtStatus As TextBox
     Friend WithEvents mnuHelpSep1 As System.Windows.Forms.MenuItem
     <System.Diagnostics.DebuggerStepThrough()> Private Sub InitializeComponent()
         Me.components = New System.ComponentModel.Container()
@@ -98,6 +100,7 @@ Public Class frmListPOR
         Me.mnuHelpAbout = New System.Windows.Forms.MenuItem()
         Me.cmdExit = New System.Windows.Forms.Button()
         Me.cmdStart = New System.Windows.Forms.Button()
+        Me.txtStatus = New System.Windows.Forms.TextBox()
         Me.fraOptions.SuspendLayout()
         Me.fraFilePaths.SuspendLayout()
         Me.fraControls.SuspendLayout()
@@ -339,20 +342,21 @@ Public Class frmListPOR
         Me.cmdStart.TabIndex = 6
         Me.cmdStart.Text = "&Start"
         '
-        'mnuHelpOverview
+        'txtStatus
         '
-        Me.mnuHelpOverview.Index = 0
-        Me.mnuHelpOverview.Text = "&Overview"
-        '
-        'mnuHelpSep1
-        '
-        Me.mnuHelpSep1.Index = 1
-        Me.mnuHelpSep1.Text = "-"
+        Me.txtStatus.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.txtStatus.Location = New System.Drawing.Point(327, 280)
+        Me.txtStatus.Name = "txtStatus"
+        Me.txtStatus.ReadOnly = True
+        Me.txtStatus.Size = New System.Drawing.Size(237, 22)
+        Me.txtStatus.TabIndex = 8
         '
         'frmListPOR
         '
         Me.AutoScaleBaseSize = New System.Drawing.Size(6, 15)
         Me.ClientSize = New System.Drawing.Size(593, 407)
+        Me.Controls.Add(Me.txtStatus)
         Me.Controls.Add(Me.cmdExit)
         Me.Controls.Add(Me.cmdStart)
         Me.Controls.Add(Me.fraControls)
@@ -567,27 +571,27 @@ Public Class frmListPOR
 
         Dim intErrorCode As Integer
 
-        Try
-            strInputFilePath = txtInputFilePath.Text.Trim
-            strOutputFilePath = txtOutputFilePath.Text.Trim
+        txtStatus.Text = String.Empty
 
-            If strInputFilePath Is Nothing OrElse strInputFilePath.Length = 0 Then
-                MsgBox("Please enter a valid input file path", MsgBoxStyle.Exclamation Or MsgBoxStyle.OKOnly, "Missing Input File Path")
+        Try
+            strInputFilePath = txtInputFilePath.Text.Trim()
+            strOutputFilePath = txtOutputFilePath.Text.Trim()
+
+            If String.IsNullOrWhiteSpace(strInputFilePath) Then
+                MessageBox.Show("Please enter a valid input file path", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             Else
-                If Not System.IO.File.Exists(strInputFilePath) Then
-                    MsgBox("File not found: " & strInputFilePath, MsgBoxStyle.Exclamation Or MsgBoxStyle.OKOnly, "Missing Input File Path")
+                If Not File.Exists(strInputFilePath) Then
+                    MessageBox.Show("File not found: " & strInputFilePath, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                 Else
-                    If strInputFilePath Is Nothing OrElse strInputFilePath.Length = 0 Then
-                        MsgBox("Please enter a valid output file path", MsgBoxStyle.Exclamation Or MsgBoxStyle.OKOnly, "Missing Output File Path")
-                    ElseIf strInputFilePath = strOutputFilePath Then
-                        MsgBox("The input and output file paths cannot be identical", MsgBoxStyle.Exclamation Or MsgBoxStyle.OKOnly, "Identical Paths")
+                    If String.Equals(strInputFilePath, strOutputFilePath, StringComparison.OrdinalIgnoreCase) Then
+                        MessageBox.Show("The input and output file paths cannot be identical", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                     Else
                         Try
                             mProcessing = True
                             mAbortProcessing = False
 
-                            Me.Cursor = Windows.Forms.Cursors.WaitCursor
-                            pbarProgress.InitializeProgressBar(0, 100, True)
+                            Me.Cursor = Cursors.WaitCursor
+                            pbarProgress.Value = 0
                             cmdStart.Text = "&Abort"
 
                             With mListPOR
@@ -608,21 +612,22 @@ Public Class frmListPOR
                         Catch ex As Exception
                             intErrorCode = -100
                         Finally
-                            Me.Cursor = Windows.Forms.Cursors.Default
+                            Me.Cursor = Cursors.Default
                             cmdStart.Text = "&Start"
                         End Try
 
                         If intErrorCode = 0 Then
-                            MsgBox("Processing complete", MsgBoxStyle.Information Or MsgBoxStyle.OKOnly, "Done")
+                            txtStatus.Text = mListPOR.MostRecentOutputFile
+                            MessageBox.Show("Processing complete", "Done", MessageBoxButtons.OK, MessageBoxIcon.Information)
                         Else
-                            MsgBox("Error while processing: " & mListPOR.GetErrorMessage(), MsgBoxStyle.Exclamation Or MsgBoxStyle.OKOnly, "Error")
+                            MessageBox.Show("Error while processing: " & mListPOR.GetErrorMessage(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                         End If
                     End If
                 End If
             End If
 
         Catch ex As Exception
-            MsgBox("Error validating the input and output file paths", MsgBoxStyle.Exclamation Or MsgBoxStyle.OKOnly, "Path Error")
+            MessageBox.Show("Error validating the input and output file paths", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
     End Sub
@@ -827,5 +832,9 @@ Public Class frmListPOR
 
     Private Sub mnuHelpOverview_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuHelpOverview.Click
         ShowOverview()
+    End Sub
+
+    Private Sub mListPOR_StatusEvent(message As String) Handles mListPOR.StatusEvent
+        txtStatus.Text = message
     End Sub
 End Class
