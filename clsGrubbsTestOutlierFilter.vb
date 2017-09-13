@@ -3,12 +3,6 @@ Option Strict On
 Imports System.Collections.Generic
 Imports System.Runtime.InteropServices
 
-' This class can be used to remove outliers from a list of numbers (doubles)
-' It uses Grubb's test to determine whether or not each number in the list
-'  is far enough away from the mean to be thrown out
-'
-' Utilizes classes QSDouble and StatDoubles
-'
 ' -------------------------------------------------------------------------------
 ' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
 ' Program started August 13, 2004
@@ -22,6 +16,11 @@ Imports System.Runtime.InteropServices
 ' http://www.apache.org/licenses/LICENSE-2.0
 '
 
+''' <summary>
+'''  This class can be used to identify outliers in a list of numbers.
+''' It uses Grubb's test to determine whether or not each number in the list
+'''  is far enough away from the mean to be thrown out
+''' </summary>
 Public Class clsGrubbsTestOutlierFilter
 
 #Region "Enums and Structs"
@@ -39,6 +38,7 @@ Public Class clsGrubbsTestOutlierFilter
 #End Region
 
 #Region "Module-wide Variables"
+
     Private mConfidenceLevel As eclConfidenceLevelConstants
     Private mMinFinalValueCount As Integer
     Private mIterate As Boolean
@@ -49,6 +49,10 @@ Public Class clsGrubbsTestOutlierFilter
 
 #Region "Interface functions"
 
+    ''' <summary>
+    ''' Confidence level
+    ''' </summary>
+    ''' <returns></returns>
     Public Property ConfidenceLevel As eclConfidenceLevelConstants
         Get
             Return mConfidenceLevel
@@ -58,6 +62,10 @@ Public Class clsGrubbsTestOutlierFilter
         End Set
     End Property
 
+    ''' <summary>
+    ''' Minimum number of values that must be kept in the list
+    ''' </summary>
+    ''' <returns></returns>
     Public Property MinFinalValueCount As Integer
         Get
             Return mMinFinalValueCount
@@ -68,6 +76,11 @@ Public Class clsGrubbsTestOutlierFilter
         End Set
     End Property
 
+    ''' <summary>
+    ''' If true, find multiple outliers
+    ''' If false, only find the most extreme outlier
+    ''' </summary>
+    ''' <returns></returns>
     Public Property RemoveMultipleValues As Boolean
         Get
             Return mIterate
@@ -90,16 +103,17 @@ Public Class clsGrubbsTestOutlierFilter
         m97PctThresholds = New List(Of udtThresholdInfoType)
     End Sub
 
+    ''' <summary>
+    ''' Use Grubb's test to identify outliers in lstData (at a given confidence level)
+    ''' </summary>
+    ''' <param name="lstData"></param>
+    ''' <param name="outlierIndices">Output: indices of outlier values</param>
+    ''' <returns>True if success (even if no values removed) and false if an error or sortedValues doesn't contain any data</returns>
+    ''' <remarks>
+    ''' If RemoveMultipleValues is true, will repeatedly remove the outliers, until no outliers remain
+    ''' or the number of values falls below MinFinalValueCount
+    ''' </remarks>
     Public Function FindOutliers(lstData As List(Of Double), <Out> ByRef outlierIndices As SortedSet(Of Integer)) As Boolean
-        ' Uses Grubb's test to identify outliers in lstData (at a given confidence level)
-        ' intIndexPointers() is an array of integers that is parallel to dblValues(), and will be
-        '  kept in sync with any changes made to dblValues
-
-        ' If intMaxIterations > 1, then will repeatedly remove the outliers, until no outliers
-        '  remain or the number of values falls below intMinValues
-        '
-        ' Returns True if success (even if no values removed) and false if an error or sortedValues doesn't contain any data
-        ' Returns the number of values removed in intValueCountRemovedOut
 
         outlierIndices = New SortedSet(Of Integer)
 
@@ -140,6 +154,7 @@ Public Class clsGrubbsTestOutlierFilter
                     indexPointers(targetIndex) = indexPointers(i)
                     targetIndex += 1
                 Next
+
                 sortedDataCount -= 1
 
             Loop While mIterate And sortedDataCount > mMinFinalValueCount
@@ -222,9 +237,11 @@ Public Class clsGrubbsTestOutlierFilter
             End If
 
             If dblZScore > dblPValue Then
+                ' Outlier found
                 Return True
             End If
 
+            ' The value furthest from the mean is not an outlier
             candidateOutlierIndex = -1
             Return False
 

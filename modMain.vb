@@ -3,8 +3,7 @@ Option Strict On
 Imports System.IO
 Imports System.Reflection
 Imports PRISM
-' Wrapper functions to call clsListPOR or show frmListPOR
-'
+
 ' -------------------------------------------------------------------------------
 ' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
 ' Program started August 13, 2004
@@ -26,6 +25,9 @@ Imports PRISM
 ' SOFTWARE.  This notice including this sentence must appear on any copies of
 ' this computer software.
 
+''' <summary>
+'''  Calls clsListPOR at the console or shows frmListPOR
+''' </summary>
 Module modMain
 
     Private Declare Auto Function ShowWindow Lib "user32.dll" (hWnd As IntPtr, nCmdShow As Integer) As Boolean
@@ -39,7 +41,10 @@ Module modMain
     Private mOutputFilePath As String
 
     Private mListPORClass As clsListPOR
-
+    ''' <summary>
+    ''' Entry method
+    ''' </summary>
+    ''' <returns>0 if no error, error code if an error</returns>
     Public Function Main() As Integer
         ' Returns 0 if no error, error code if an error
 

@@ -78,7 +78,7 @@ Public Class clsListPOR
             Return mColumnCountOverride
         End Get
         Set
-            ' Value can only be 1 or 2
+            ' Value can only be 0, 1 or 2
             If Value = 1 Or Value = 2 Then
                 mColumnCountOverride = Value
             Else
@@ -197,10 +197,12 @@ Public Class clsListPOR
 
     End Function
 
+    ''' <summary>
+    ''' Converts ratio-based value to natural log
+    ''' </summary>
+    ''' <param name="dblValue"></param>
+    ''' <returns></returns>
     Private Function NormalValueToNaturalLog(dblValue As Double) As Double
-        '------------------------------------------------------
-        'Converts ratio-based value to natural log
-        '------------------------------------------------------
         Try
             Return Math.Log(dblValue)
         Catch
@@ -208,10 +210,12 @@ Public Class clsListPOR
         End Try
     End Function
 
+    ''' <summary>
+    ''' Converts ratio-based value to shifted symmetric value
+    ''' </summary>
+    ''' <param name="dblValue"></param>
+    ''' <returns></returns>
     Private Function NormalValueToSymmetricValue(dblValue As Double) As Double
-        '------------------------------------------------------
-        'Converts ratio-based value to shifted symmetric value
-        '------------------------------------------------------
         Try
             If dblValue >= 1 Then
                 Return dblValue - 1
@@ -336,10 +340,12 @@ Public Class clsListPOR
         '   The data will be treated as one large Group, outliers will be found and removed
         '
         ' For both modes, the output will be saved in strDestPath (auto-generated name if empty)
-        ' If blnAssumeFileIsSorted is False, then the entire file will be read into memory,
+        ' If mAssumeSortedInputFile is False, the entire file will be read into memory,
         '  the data will be sorted on the first column, then the outliers will be found
-        ' If blnAssumeFileIsSorted is True, then only the data for the most recent group will be retained
+
+        ' If mAssumeSortedInputFile is True, only the data for the most recent group will be retained
         '  This is useful for parsing files will too much data to reside in memory
+        '  It is also useful for retaining the order of the input data
         '
 
         Dim objOutlierFilter As clsGrubbsTestOutlierFilter
@@ -644,10 +650,12 @@ Public Class clsListPOR
 
     End Sub
 
+    ''' <summary>
+    ''' Converts shifted symmetric value to normal value
+    ''' </summary>
+    ''' <param name="dblSymmetricValue"></param>
+    ''' <returns></returns>
     Private Function SymmetricValueToNormalValue(dblSymmetricValue As Double) As Double
-        '------------------------------------------------------
-        'Converts shifted symmetric value to normal value
-        '------------------------------------------------------
 
         Try
             If dblSymmetricValue >= 0 Then
