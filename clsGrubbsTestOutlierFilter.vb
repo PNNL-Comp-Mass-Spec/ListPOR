@@ -1,7 +1,6 @@
 Option Strict On
 
 Imports System.Collections.Generic
-Imports System.Linq
 Imports System.Runtime.InteropServices
 
 ' This class can be used to remove outliers from a list of numbers (doubles)
@@ -14,8 +13,8 @@ Imports System.Runtime.InteropServices
 ' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
 ' Program started August 13, 2004
 
-' E-mail: matthew.monroe@pnl.gov or matt@alchemistmatt.com
-' Website: http://ncrr.pnl.gov/ or http://www.sysbio.org/resources/staff/
+' E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com
+' Website: http://panomics.pnnl.gov/ or http://omics.pnl.gov or http://www.sysbio.org/resources/staff/
 ' -------------------------------------------------------------------------------
 '
 ' Licensed under the Apache License, Version 2.0; you may not use this file except
@@ -25,16 +24,27 @@ Imports System.Runtime.InteropServices
 
 Public Class clsGrubbsTestOutlierFilter
 
-#Region "Module-wide Variables"
+#Region "Enums and Structs"
     Public Enum eclConfidenceLevelConstants
         e95Pct = 0
         e97Pct = 1
         e99Pct = 2
     End Enum
 
+    Private Structure udtThresholdInfoType
+        Public DataCount As Integer
+        Public Threshold As Single
+    End Structure
+
+#End Region
+
+#Region "Module-wide Variables"
     Private mConfidenceLevel As eclConfidenceLevelConstants
     Private mMinFinalValueCount As Integer
     Private mIterate As Boolean
+
+    Private ReadOnly m97PctThresholds As List(Of udtThresholdInfoType)
+
 #End Region
 
 #Region "Interface functions"
@@ -66,7 +76,19 @@ Public Class clsGrubbsTestOutlierFilter
             mIterate = Value
         End Set
     End Property
+
 #End Region
+
+    ''' <summary>
+    ''' Constructor
+    ''' </summary>
+    Public Sub New()
+        mConfidenceLevel = eclConfidenceLevelConstants.e95Pct
+        mMinFinalValueCount = 3
+        mIterate = False
+
+        m97PctThresholds = New List(Of udtThresholdInfoType)
+    End Sub
 
     Public Function FindOutliers(lstData As List(Of Double), <Out> ByRef outlierIndices As SortedSet(Of Integer)) As Boolean
         ' Uses Grubb's test to identify outliers in lstData (at a given confidence level)
@@ -213,113 +235,96 @@ Public Class clsGrubbsTestOutlierFilter
 
     End Function
 
-    Private Function Lookup97PctPValue(intCount As Integer) As Double
+    Private Function Lookup97PctPValue(dataCount As Integer) As Double
 
-        If intCount <= 3 Then
-            Return 1.15
-        ElseIf intCount = 4 Then
-            Return 1.48
-        ElseIf intCount = 5 Then
-            Return 1.71
-        ElseIf intCount = 6 Then
-            Return 1.89
-        ElseIf intCount = 7 Then
-            Return 2.02
-        ElseIf intCount = 8 Then
-            Return 2.13
-        ElseIf intCount = 9 Then
-            Return 2.21
-        ElseIf intCount = 10 Then
-            Return 2.29
-        ElseIf intCount = 11 Then
-            Return 2.34
-        ElseIf intCount = 12 Then
-            Return 2.41
-        ElseIf intCount = 13 Then
-            Return 2.46
-        ElseIf intCount = 14 Then
-            Return 2.51
-        ElseIf intCount = 15 Then
-            Return 2.55
-        ElseIf intCount = 16 Then
-            Return 2.59
-        ElseIf intCount = 17 Then
-            Return 2.62
-        ElseIf intCount = 18 Then
-            Return 2.65
-        ElseIf intCount = 19 Then
-            Return 2.68
-        ElseIf intCount = 20 Then
-            Return 2.71
-        ElseIf intCount = 21 Then
-            Return 2.73
-        ElseIf intCount = 22 Then
-            Return 2.76
-        ElseIf intCount = 23 Then
-            Return 2.78
-        ElseIf intCount = 24 Then
-            Return 2.8
-        ElseIf intCount = 25 Then
-            Return 2.82
-        ElseIf intCount = 26 Then
-            Return 2.84
-        ElseIf intCount = 27 Then
-            Return 2.86
-        ElseIf intCount = 28 Then
-            Return 2.88
-        ElseIf intCount = 29 Then
-            Return 2.89
-        ElseIf intCount = 30 Then
-            Return 2.91
-        ElseIf intCount = 31 Then
-            Return 2.92
-        ElseIf intCount = 32 Then
-            Return 2.94
-        ElseIf intCount = 33 Then
-            Return 2.95
-        ElseIf intCount = 34 Then
-            Return 2.97
-        ElseIf intCount = 35 Then
-            Return 2.98
-        ElseIf intCount = 36 Then
-            Return 2.99
-        ElseIf intCount = 37 Then
-            Return 3
-        ElseIf intCount = 38 Then
-            Return 3.01
-        ElseIf intCount = 39 Then
-            Return 3.03
-        ElseIf intCount = 40 Then
-            Return 3.04
-        ElseIf intCount <= 50 Then
-            Return 3.13
-        ElseIf intCount <= 60 Then
-            Return 3.2
-        ElseIf intCount <= 70 Then
-            Return 3.26
-        ElseIf intCount <= 80 Then
-            Return 3.31
-        ElseIf intCount <= 90 Then
-            Return 3.35
-        ElseIf intCount <= 100 Then
-            Return 3.38
-        ElseIf intCount <= 110 Then
-            Return 3.42
-        ElseIf intCount <= 120 Then
-            Return 3.44
-        ElseIf intCount <= 130 Then
-            Return 3.47
-        ElseIf intCount <= 140 Then
-            Return 3.49
-        Else
-            Return 3.5
+        If m97PctThresholds.Count = 0 Then
+            AddThreshold(m97PctThresholds, 3, 1.15)
+            AddThreshold(m97PctThresholds, 4, 1.48)
+            AddThreshold(m97PctThresholds, 5, 1.71)
+            AddThreshold(m97PctThresholds, 6, 1.89)
+            AddThreshold(m97PctThresholds, 7, 2.02)
+            AddThreshold(m97PctThresholds, 8, 2.13)
+            AddThreshold(m97PctThresholds, 9, 2.21)
+            AddThreshold(m97PctThresholds, 10, 2.29)
+            AddThreshold(m97PctThresholds, 11, 2.34)
+            AddThreshold(m97PctThresholds, 12, 2.41)
+            AddThreshold(m97PctThresholds, 13, 2.46)
+            AddThreshold(m97PctThresholds, 14, 2.51)
+            AddThreshold(m97PctThresholds, 15, 2.55)
+            AddThreshold(m97PctThresholds, 16, 2.59)
+            AddThreshold(m97PctThresholds, 17, 2.62)
+            AddThreshold(m97PctThresholds, 18, 2.65)
+            AddThreshold(m97PctThresholds, 19, 2.68)
+            AddThreshold(m97PctThresholds, 20, 2.71)
+            AddThreshold(m97PctThresholds, 21, 2.73)
+            AddThreshold(m97PctThresholds, 22, 2.76)
+            AddThreshold(m97PctThresholds, 23, 2.78)
+            AddThreshold(m97PctThresholds, 24, 2.8)
+            AddThreshold(m97PctThresholds, 25, 2.82)
+            AddThreshold(m97PctThresholds, 26, 2.84)
+            AddThreshold(m97PctThresholds, 27, 2.86)
+            AddThreshold(m97PctThresholds, 28, 2.88)
+            AddThreshold(m97PctThresholds, 29, 2.89)
+            AddThreshold(m97PctThresholds, 30, 2.91)
+            AddThreshold(m97PctThresholds, 31, 2.92)
+            AddThreshold(m97PctThresholds, 32, 2.94)
+            AddThreshold(m97PctThresholds, 33, 2.95)
+            AddThreshold(m97PctThresholds, 34, 2.97)
+            AddThreshold(m97PctThresholds, 35, 2.98)
+            AddThreshold(m97PctThresholds, 36, 2.99)
+            AddThreshold(m97PctThresholds, 37, 3)
+            AddThreshold(m97PctThresholds, 38, 3.01)
+            AddThreshold(m97PctThresholds, 39, 3.03)
+            AddThreshold(m97PctThresholds, 40, 3.04)
+            AddThreshold(m97PctThresholds, 50, 3.13)
+            AddThreshold(m97PctThresholds, 60, 3.2)
+            AddThreshold(m97PctThresholds, 70, 3.26)
+            AddThreshold(m97PctThresholds, 80, 3.31)
+            AddThreshold(m97PctThresholds, 90, 3.35)
+            AddThreshold(m97PctThresholds, 100, 3.38)
+            AddThreshold(m97PctThresholds, 110, 3.42)
+            AddThreshold(m97PctThresholds, 120, 3.44)
+            AddThreshold(m97PctThresholds, 130, 3.47)
+            AddThreshold(m97PctThresholds, 140, 3.49)
+            AddThreshold(m97PctThresholds, 150, 3.51)
+            AddThreshold(m97PctThresholds, 170, 3.55)
+            AddThreshold(m97PctThresholds, 225, 3.62)
+            AddThreshold(m97PctThresholds, 300, 3.68)
+            AddThreshold(m97PctThresholds, 500, 3.75)
+            AddThreshold(m97PctThresholds, 720, 3.8)
+            AddThreshold(m97PctThresholds, 795, 3.81)
+            AddThreshold(m97PctThresholds, 960, 3.82)
+            AddThreshold(m97PctThresholds, 1050, 3.83)
+            AddThreshold(m97PctThresholds, 1280, 3.84)
+            AddThreshold(m97PctThresholds, 1550, 3.85)
+            AddThreshold(m97PctThresholds, 2070, 3.86)
+            AddThreshold(m97PctThresholds, 2750, 3.87)
+            AddThreshold(m97PctThresholds, 4400, 3.88)
+            AddThreshold(m97PctThresholds, 9500, 3.89)
+            AddThreshold(m97PctThresholds, Integer.MaxValue, 3.9)
         End If
+
+        Dim threshold As Single = 1.15
+
+        For Each item In m97PctThresholds
+            If dataCount > item.DataCount Then
+                threshold = item.Threshold
+            Else
+                Exit For
+            End If
+        Next
+
+        Return threshold
 
     End Function
 
-    Public Sub New()
-        mConfidenceLevel = eclConfidenceLevelConstants.e95Pct
-        mMinFinalValueCount = 3
-        mIterate = False
+    Private Sub AddThreshold(thresholds As ICollection(Of udtThresholdInfoType), dataCount As Integer, threshold As Single)
+
+        Dim thresholdInfo = New udtThresholdInfoType With {
+            .DataCount = dataCount,
+            .Threshold = threshold
+        }
+
+        thresholds.Add(thresholdInfo)
     End Sub
 End Class
