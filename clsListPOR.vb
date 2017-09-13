@@ -237,14 +237,10 @@ Public Class clsListPOR
         Try
             Dim lstDataValues = New List(Of Double)
 
-            Dim dblValue As Double
-
             ' Copy the values to examine into dblValues
             For Each dataPoint In lstData
 
-                If Not Double.TryParse(dataPoint.Value, dblValue) Then
-                    dblValue = 0
-                End If
+                Dim dblValue = dataPoint.ValueDbl
 
                 If mUseSymmetricValues OrElse mUseNaturalLogValues Then
                     If dblValue > 0 Then
@@ -575,8 +571,9 @@ Public Class clsListPOR
 
                     If lstData.Count > 0 Then
 
+
                         ' Sort udtData by Key, then step through the list and process each block, writing to disk as we go
-                        Dim sortedData = (From item In lstData Order By item.Key, item.Value Select item).ToList()
+                        Dim sortedData = (From item In lstData Order By item.Key, item.ValueDbl Select item).ToList()
 
                         intIndexBlockStart = 0
                         percentCompleteAtStart = nextPercentComplete
