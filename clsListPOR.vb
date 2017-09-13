@@ -1,39 +1,18 @@
 Option Strict On
 
-' ListPOR stands for List Parser for Outlier Removal
-' 
-' Parses an input file looking for blocks of related data
-' For each block, filters the data using clsGrubbsTestOutlierFilter
-'
-' -------------------------------------------------------------------------------
-' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
-' Program started August 13, 2004
+Imports System.Collections.Generic
+Imports System.IO
+Imports System.Linq
 
-' E-mail: matthew.monroe@pnl.gov or matt@alchemistmatt.com
-' Website: http://ncrr.pnl.gov/ or http://www.sysbio.org/resources/staff/
-' -------------------------------------------------------------------------------
-' 
-' Licensed under the Apache License, Version 2.0; you may not use this file except
-' in compliance with the License.  You may obtain a copy of the License at 
-' http://www.apache.org/licenses/LICENSE-2.0
-'
-' Notice: This computer software was prepared by Battelle Memorial Institute, 
-' hereinafter the Contractor, under Contract No. DE-AC05-76RL0 1830 with the 
-' Department of Energy (DOE).  All rights in the computer software are reserved 
-' by DOE on behalf of the United States Government and the Contractor as 
-' provided in the Contract.  NEITHER THE GOVERNMENT NOR THE CONTRACTOR MAKES ANY 
-' WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS 
-' SOFTWARE.  This notice including this sentence must appear on any copies of 
-' this computer software.
-
+''' <summary>
+''' ListPOR (List Parser for Outlier Removal)
+''' Parses an input file looking for blocks of related data
+''' For each block, filters the data using clsGrubbsTestOutlierFilter
+''' </summary>
 Public Class clsListPOR
+    Inherits PRISM.clsEventNotifier
 
-#Region "Public Structures and Constants"
-    Public Structure udtFileDataType
-        Public Key As String
-        Public Value As String
-        Public RemainingCols As String
-    End Structure
+#Region "Enums"
 
     Public Enum eListPORErrorCodeCodes
         NoError = 0
@@ -49,6 +28,7 @@ Public Class clsListPOR
     Private mAssumeSortedInputFile As Boolean
     Private mConfidenceLevel As clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants
     Private mMinFinalValueCount As Integer
+    Private mMostRecentOutputFile As String
     Private mRemoveMultipleValues As Boolean
     Private mUseSymmetricValues As Boolean
     Private mUseNaturalLogValues As Boolean
@@ -59,43 +39,45 @@ Public Class clsListPOR
 
     Private mFileLengthBytes As Long
     Private mFileBytesRead As Long
+    Private mPercentComplete As Single
     Private mAbortProcessing As Boolean
+
 #End Region
 
 #Region "Interface functions"
 
-    Public Property AppendGroupAverage() As Boolean
+    Public Property AppendGroupAverage As Boolean
         Get
             Return mAppendGroupAverage
         End Get
-        Set(ByVal Value As Boolean)
+        Set
             mAppendGroupAverage = Value
         End Set
     End Property
 
-    Public Property AssumeSortedInputFile() As Boolean
+    Public Property AssumeSortedInputFile As Boolean
         Get
             Return mAssumeSortedInputFile
         End Get
-        Set(ByVal Value As Boolean)
+        Set
             mAssumeSortedInputFile = Value
         End Set
     End Property
 
-    Public Property ConfidenceLevel() As clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants
+    Public Property ConfidenceLevel As clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants
         Get
             Return mConfidenceLevel
         End Get
-        Set(ByVal Value As clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants)
+        Set
             mConfidenceLevel = Value
         End Set
     End Property
 
-    Public Property ColumnCountOverride() As Integer
+    Public Property ColumnCountOverride As Integer
         Get
             Return mColumnCountOverride
         End Get
-        Set(ByVal Value As Integer)
+        Set
             ' Value can only be 1 or 2
             If Value = 1 Or Value = 2 Then
                 mColumnCountOverride = Value
@@ -105,79 +87,86 @@ Public Class clsListPOR
         End Set
     End Property
 
-    Public ReadOnly Property ErrorCode() As eListPORErrorCodeCodes
+    Public ReadOnly Property ErrorCode As eListPORErrorCodeCodes
         Get
             Return mLocalErrorCode
         End Get
     End Property
 
-    Public Property MinFinalValueCount() As Integer
+    Public Property MinFinalValueCount As Integer
         Get
             Return mMinFinalValueCount
         End Get
-        Set(ByVal Value As Integer)
+        Set
             If Value < 2 Then Value = 2
             mMinFinalValueCount = Value
         End Set
     End Property
 
-    Public ReadOnly Property PercentComplete() As Single
+    Public ReadOnly Property MostRecentOutputFile As String
         Get
-            Return ComputePercentComplete()
+            Return mMostRecentOutputFile
         End Get
     End Property
 
-    Public Property RemoveMultipleValues() As Boolean
+    Public ReadOnly Property PercentComplete As Single
+        Get
+            Return mPercentComplete
+        End Get
+    End Property
+
+    Public Property RemoveMultipleValues As Boolean
         Get
             Return mRemoveMultipleValues
         End Get
-        Set(ByVal Value As Boolean)
+        Set
             mRemoveMultipleValues = Value
         End Set
     End Property
 
-    Public Property UseNaturalLogValues() As Boolean
+    Public Property UseNaturalLogValues As Boolean
         Get
             Return mUseNaturalLogValues
         End Get
-        Set(ByVal Value As Boolean)
+        Set
             mUseNaturalLogValues = Value
         End Set
     End Property
 
-    Public Property UseSymmetricValues() As Boolean
+    Public Property UseSymmetricValues As Boolean
         Get
             Return mUseSymmetricValues
         End Get
-        Set(ByVal Value As Boolean)
+        Set
             mUseSymmetricValues = Value
         End Set
     End Property
 #End Region
 
-    Public Event ProgressUpdate()
+    ''' <summary>
+    ''' Constructor
+    ''' </summary>
+    Public Sub New()
+        mAssumeSortedInputFile = False
+        mRemoveMultipleValues = True
+        mConfidenceLevel = clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants.e95Pct
+        MinFinalValueCount = 3
+        ColumnCountOverride = 0
+        mUseSymmetricValues = False
+        UseNaturalLogValues = False
+        mAppendGroupAverage = True
+
+        mLocalErrorCode = eListPORErrorCodeCodes.NoError
+    End Sub
 
     Public Sub AbortProcessing()
         mAbortProcessing = True
     End Sub
 
-    Private Function ComputePercentComplete() As Single
-
-        Dim sngPercentComplete As Single
-
-        Try
-            If mFileLengthBytes > 0 Then
-                sngPercentComplete = CType(mFileBytesRead / CType(mFileLengthBytes, Single) * 100, Single)
-                If sngPercentComplete > 100 Then sngPercentComplete = 100
-                Return sngPercentComplete
-            Else
-                Return 0
-            End If
-
-        Catch ex As Exception
-            Return 0
-        End Try
-
+    Public Shared Function AutoGenerateOutputFileName(inputFilePath As String) As String
+        Dim inputFile = New FileInfo(inputFilePath)
+        Dim outputFilePath = Path.Combine(inputFile.DirectoryName, Path.GetFileNameWithoutExtension(inputFile.Name) & "_filtered" & inputFile.Extension)
+        Return outputFilePath
     End Function
 
     Public Function GetErrorMessage() As String
@@ -199,7 +188,7 @@ Public Class clsListPOR
 
     End Function
 
-    Private Function NaturalLogValueToNormalValue(ByVal dblNaturalLogValue As Double) As Double
+    Private Function NaturalLogValueToNormalValue(dblNaturalLogValue As Double) As Double
         Try
             Return Math.Exp(dblNaturalLogValue)
         Catch
@@ -208,7 +197,7 @@ Public Class clsListPOR
 
     End Function
 
-    Private Function NormalValueToNaturalLog(ByVal dblValue As Double) As Double
+    Private Function NormalValueToNaturalLog(dblValue As Double) As Double
         '------------------------------------------------------
         'Converts ratio-based value to natural log
         '------------------------------------------------------
@@ -219,7 +208,7 @@ Public Class clsListPOR
         End Try
     End Function
 
-    Private Function NormalValueToSymmetricValue(ByVal dblValue As Double) As Double
+    Private Function NormalValueToSymmetricValue(dblValue As Double) As Double
         '------------------------------------------------------
         'Converts ratio-based value to shifted symmetric value
         '------------------------------------------------------
@@ -234,114 +223,96 @@ Public Class clsListPOR
         End Try
     End Function
 
+    Private Sub ParseBlock(
+      objOutlierFilter As clsGrubbsTestOutlierFilter,
+      lstData As List(Of clsFileData),
+      columnCount As Integer,
+      swOutFile As TextWriter)
 
-    Private Sub ParseBlock(ByRef objOutlierFilter As clsGrubbsTestOutlierFilter, ByRef udtData() As udtFileDataType, ByVal intMaxIndexToUse As Integer, ByVal intColCount As Integer, ByVal blnWriteToDisk As Boolean, ByRef srOutFile As System.IO.StreamWriter)
-
-        Dim intIndexPointers() As Integer
-        Dim dblValues() As Double
-
-        Dim blnAppendGroupAverage As Boolean
-        Dim dblSum As Double
-        Dim dblAverage As Double
-
-        Dim udtDataFiltered() As udtFileDataType
-
-        Dim intIndex As Integer
-        Dim intValueCountRemoved As Integer
-
-        If intMaxIndexToUse < 0 Then
-            Debug.Assert(False, "Invalid call to ParseBlock")
+        If lstData.Count = 0 Then
+            ' No data; nothing to do
             Exit Sub
         End If
 
         Try
-            ReDim intIndexPointers(intMaxIndexToUse)
-            ReDim dblValues(intMaxIndexToUse)
+            Dim lstDataValues = New List(Of Double)
+
+            Dim dblValue As Double
 
             ' Copy the values to examine into dblValues
-            For intIndex = 0 To intMaxIndexToUse
-                Try
-                    dblValues(intIndex) = CType(udtData(intIndex).Value, Double)
-                    If mUseSymmetricValues Or mUseNaturalLogValues Then
-                        If dblValues(intIndex) > 0 Then
-                            If mUseNaturalLogValues Then
-                                dblValues(intIndex) = NormalValueToNaturalLog(dblValues(intIndex))
-                            Else
-                                dblValues(intIndex) = NormalValueToSymmetricValue(dblValues(intIndex))
-                            End If
-                        Else
-                            ' Invalid value for computing the symmetric value or logarithm
-                            dblValues(intIndex) = 0
-                        End If
-                    End If
-                Catch ex As Exception
-                    dblValues(intIndex) = 0
-                End Try
-                intIndexPointers(intIndex) = intIndex
-            Next intIndex
+            For Each dataPoint In lstData
 
-            If intMaxIndexToUse < mMinFinalValueCount Then
-                ' Not enough data to remove outliers
-            Else
-                ' Enough data to remove outliers
-                If objOutlierFilter.RemoveOutliers(dblValues, intIndexPointers, intValueCountRemoved) Then
-                    ' Successful call to .RemoveOutliers
-
-                    If blnWriteToDisk Then
-                        ' We'll write the block to the output file below
-                        ' No need to update udtData since we're going to discard it anyway
-                    Else
-                        ' Remove the outlier data from udtData
-                        If intValueCountRemoved > 0 Then
-                            ' Remove the outlier data from udtData
-
-                            ReDim udtDataFiltered(intMaxIndexToUse)
-
-                            For intIndex = 0 To intIndexPointers.Length - 1
-                                udtDataFiltered(intIndex) = udtData(intIndexPointers(intIndex))
-                            Next
-
-                            ' Copy the data from udtDataFiltered back to udtData
-                            udtData = udtDataFiltered
-                        End If
-                    End If
-                Else
-                    ' Error removing outliers; simply re-write the input text to the output file
+                If Not Double.TryParse(dataPoint.Value, dblValue) Then
+                    dblValue = 0
                 End If
 
-                'If blnUseCenteredMedian Then
+                If mUseSymmetricValues OrElse mUseNaturalLogValues Then
+                    If dblValue > 0 Then
+                        If mUseNaturalLogValues Then
+                            dblValue = NormalValueToNaturalLog(dblValue)
+                        Else
+                            dblValue = NormalValueToSymmetricValue(dblValue)
+                        End If
+                    Else
+                        ' Invalid value for computing the symmetric value or logarithm
+                        dblValue = 0
+                    End If
+                End If
 
-                'End If
-            End If
+                lstDataValues.Add(dblValue)
+            Next
 
-            If blnWriteToDisk Then
-                blnAppendGroupAverage = mAppendGroupAverage And intColCount > 1
-                If blnAppendGroupAverage Then
-                    ' Compute the average value for the values in dblValues and append as an additional column
+            Dim lstFilteredData = New List(Of clsFileData)
+            Dim dblAverage As Double = 0
 
-                    dblSum = 0
-                    For intIndex = 0 To dblValues.Length - 1
-                        dblSum += dblValues(intIndex)
+            If lstDataValues.Count <= mMinFinalValueCount Then
+                ' Not enough data to remove outliers
+                lstFilteredData = lstData
+                dblAverage = MathNet.Numerics.Statistics.ArrayStatistics.Mean(lstDataValues.ToArray())
+            Else
+                ' Find outliers
+                Dim outlierIndices As SortedSet(Of Integer) = Nothing
+
+                If objOutlierFilter.FindOutliers(lstDataValues, outlierIndices) Then
+                    ' Successful call to .FindOutliers
+
+                    ' Remove the outlier data from lstFileData
+                    ' (outlierIndices might be empty; that's OK, we need to compute the average)
+
+                    Dim dblSum As Double = 0
+                    For i = 0 To lstData.Count - 1
+                        If outlierIndices.Contains(i) Then Continue For
+
+                        lstFilteredData.Add(lstData(i))
+                        dblSum += lstDataValues(i)
                     Next
 
-                    If dblValues.Length > 0 Then
-                        dblAverage = dblSum / dblValues.Length
-                        If mUseSymmetricValues Or mUseNaturalLogValues Then
-                            If mUseNaturalLogValues Then
-                                dblAverage = NaturalLogValueToNormalValue(dblAverage)
-                            Else
-                                dblAverage = SymmetricValueToNormalValue(dblAverage)
-                            End If
-                        End If
-                    Else
-                        dblAverage = 0
+                    If lstFilteredData.Count > 0 Then
+                        ' Compute the average value for the values in lstFilteredData since we may append it as an additional column below
+                        dblAverage = dblSum / lstFilteredData.Count
                     End If
+
+                Else
+                    ' Error removing outliers; simply re-write the input text to the output file
+                    lstFilteredData = lstData
+                    dblAverage = MathNet.Numerics.Statistics.ArrayStatistics.Mean(lstDataValues.ToArray())
                 End If
 
-                For intIndex = 0 To intIndexPointers.Length - 1
-                    WriteBlockLine(srOutFile, intColCount, udtData(intIndexPointers(intIndex)), blnAppendGroupAverage, dblAverage)
-                Next intIndex
             End If
+
+            Dim blnAppendGroupAverage = mAppendGroupAverage And columnCount > 1
+
+            If blnAppendGroupAverage AndAlso (mUseSymmetricValues OrElse mUseNaturalLogValues) Then
+                If mUseNaturalLogValues Then
+                    dblAverage = NaturalLogValueToNormalValue(dblAverage)
+                Else
+                    dblAverage = SymmetricValueToNormalValue(dblAverage)
+                End If
+            End If
+
+            For Each item In lstFilteredData
+                WriteBlockLine(swOutFile, columnCount, item, blnAppendGroupAverage, dblAverage)
+            Next
 
         Catch ex As Exception
             Throw New Exception("Error parsing block", ex)
@@ -349,21 +320,14 @@ Public Class clsListPOR
 
     End Sub
 
-    Public Function RemoveOutliersFromListInMemory(ByRef strValueLabels() As String, ByRef dblValues() As Double, ByRef strAdditionalLabelsOrData() As String) As Boolean
-        ' Examines the labels in strValueLabels to find groups of data
-        ' For each group, examines the corresponding data in dblValues and removes outliers for the group
-        ' If strValueLabels is blank, then simply examines dblValues for outliers
-        ' Carries along strAdditionalLabelsOrData (if defined) and removes data from that array if removing data from dblValues
+    ''' <summary>
+    ''' Reads a tab-delimeted text file (strSourcePath) and removes outliers from lists of numbers in column
+    ''' </summary>
+    ''' <param name="strSourcePath"></param>
+    ''' <param name="strDestPath"></param>
+    ''' <returns></returns>
+    Public Function RemoveOutliersFromListInFile(strSourcePath As String, strDestPath As String) As Integer
 
-        ' ToDo: Code this someday
-        SetLocalErrorCode(eListPORErrorCodeCodes.NoError)
-
-        Return False
-    End Function
-
-    Public Function RemoveOutliersFromListInFile(ByVal strSourcePath As String, ByVal strDestPath As String) As Integer
-        ' Reads a tab-delimeted text file (strSourcePath) and removes outliers from lists of numbers in column
-        '
         ' Modes of operation:
         ' Mode 1
         '   The text file has two columns
@@ -375,42 +339,27 @@ Public Class clsListPOR
         '   The text file has one column
         '   The data will be treated as one large Group, outliers will be found and removed
         '
-        ' For both modes, the output will be saved in strDestPath if defined, otherwise, 
-        '  strSourcePath will be overwritten
-        ' If blnAssumeFileIsSorted is False, then the entire file will be read into memory, 
+        ' For both modes, the output will be saved in strDestPath (auto-generated name if empty)
+        ' If blnAssumeFileIsSorted is False, then the entire file will be read into memory,
         '  the data will be sorted on the first column, then the outliers will be found
         ' If blnAssumeFileIsSorted is True, then only the data for the most recent group will be retained
         '  This is useful for parsing files will too much data to reside in memory
         '
-        ' Auth: mem
-        ' Date: 08/13/2004
-
-
-        Const ARRAY_DIM_SIZE As Integer = 10000
 
         Dim objOutlierFilter As clsGrubbsTestOutlierFilter
-
-        Dim srInFile As System.IO.StreamReader
-        Dim srOutFile As System.IO.StreamWriter
 
         Dim strColumnDelimeter As Char
         Dim strDelimList() As Char
         Dim strSplitLine() As String
 
-        Dim strLineIn As String, strLineOut As String
+        Dim strLineIn As String
 
-        Dim intLineCount As Integer, intColCount As Integer
-        Dim udtData() As udtFileDataType
-        Dim udtDataForBlock() As udtFileDataType
-
-        Dim udtDataNextLine As udtFileDataType
-        Dim objComparer As System.Collections.IComparer
+        Dim columnCount As Integer
+        Dim lstData = New List(Of clsFileData)
 
         Dim strHeaderLine As String
 
-        Dim intIndex As Integer
         Dim intIndexBlockStart As Integer
-        Dim intIndexCopy As Integer
 
         Dim blnDataBlockReached As Boolean
         Dim blnAssumeFileIsSorted As Boolean
@@ -433,267 +382,257 @@ Public Class clsListPOR
             End With
         Catch ex As Exception
             SetLocalErrorCode(eListPORErrorCodeCodes.ErrorWithGrubbsFilterClass)
-            Console.WriteLine(GetErrorMessage)
+            OnErrorEvent(GetErrorMessage())
             Return mLocalErrorCode
         End Try
 
         Try
-
-            ' Assume the column delimeter is a tab, unless the input file ends in .csv
-            If Right(strSourcePath, 4).ToLower = ".csv" Then
-                strColumnDelimeter = ","c
-            Else
-                strColumnDelimeter = ControlChars.Tab
-            End If
-            strDelimList = New Char() {strColumnDelimeter}
-
-            If strDestPath Is Nothing OrElse strDestPath.Length = 0 OrElse strDestPath = strSourcePath Then
-                strDestPathToUse = strSourcePath & ".filtered"
-                strDestPath = String.Copy(strSourcePath)
+            If String.IsNullOrWhiteSpace(strDestPath) OrElse String.Equals(strSourcePath, strDestPath, StringComparison.OrdinalIgnoreCase) Then
+                strDestPathToUse = AutoGenerateOutputFileName(strSourcePath)
             Else
                 strDestPathToUse = String.Copy(strDestPath)
             End If
 
-            ' Open the input file
-            srInFile = New System.IO.StreamReader(strSourcePath)
+            Dim sourceFile = New FileInfo(strSourcePath)
+            Dim destFile = New FileInfo(strDestPathToUse)
 
-            mFileLengthBytes = srInFile.BaseStream.Length
-            RaiseEvent ProgressUpdate()
-
-            Try
-                ' Open the output file
-                srOutFile = New System.IO.StreamWriter(strDestPathToUse)
-            Catch ex As Exception
+            If String.Equals(sourceFile.FullName, destFile.FullName, StringComparison.OrdinalIgnoreCase) Then
                 SetLocalErrorCode(eListPORErrorCodeCodes.ErrorWritingOutputFile)
-                Console.WriteLine(GetErrorMessage)
+                OnErrorEvent("Input and output file cannot be the same path: " & sourceFile.FullName)
                 Return mLocalErrorCode
-            End Try
-
-            intLineCount = 0
-            ReDim udtData(ARRAY_DIM_SIZE)
-
-            If mColumnCountOverride = 1 Or mColumnCountOverride = 2 Then
-                intColCount = mColumnCountOverride
-            Else
-                ' Set the column count to 0 for now, unless 
-                ' We'll update it when we reach a header line or a data block line
-                intColCount = 0
             End If
 
-            strLineIn = String.Empty
-            strHeaderLine = String.Empty
-            Do While srInFile.Peek() >= 0
+            mMostRecentOutputFile = destFile.FullName
 
-                strLineIn = srInFile.ReadLine()
-                mFileBytesRead += strLineIn.Length + 2
-                RaiseEvent ProgressUpdate()
-                If mAbortProcessing Then Exit Do
+            Using swOutFile = New StreamWriter(New FileStream(destFile.FullName, FileMode.Create, FileAccess.Write, FileShare.Read))
 
-                If Not strLineIn Is Nothing AndAlso strLineIn.Length > 0 Then
-                    ' Split the line, allowing at most 3 columns (if more than 3, then all data is lumped into the third column)
-                    strSplitLine = strLineIn.Split(strDelimList, 3)
+                ' Assume the column delimeter is a tab, unless the input file ends in .csv
+                If String.Equals(sourceFile.Extension, ".csv", StringComparison.OrdinalIgnoreCase) Then
+                    strColumnDelimeter = ","c
+                Else
+                    strColumnDelimeter = ControlChars.Tab
+                End If
+                strDelimList = New Char() {strColumnDelimeter}
 
-                    If Not blnDataBlockReached Then
-                        ' Haven't found the data block yet, is this a header line?
-                        If intColCount = 1 Then
-                            If strSplitLine.Length > 0 AndAlso IsNumeric(strSplitLine(0)) Then
-                                blnDataBlockReached = True
-                            Else
-                                strHeaderLine = strLineIn
-                            End If
-                        ElseIf intColCount = 2 Then
-                            If strSplitLine.Length > 1 AndAlso IsNumeric(strSplitLine(1)) Then
-                                blnDataBlockReached = True
-                            Else
-                                strHeaderLine = strLineIn
-                            End If
-                        ElseIf strSplitLine.Length >= 2 Then
-                            If Not IsNumeric(strSplitLine(0)) And IsNumeric(strSplitLine(1)) Then
-                                blnDataBlockReached = True
-                                intColCount = 2
-                            Else
-                                strHeaderLine = strLineIn
-                            End If
-                        ElseIf strSplitLine.Length = 1 Then
-                            If IsNumeric(strSplitLine(0)) Then
-                                blnDataBlockReached = True
-                                intColCount = 1
-                            Else
-                                strHeaderLine = strLineIn
-                            End If
-                        Else
-                            strHeaderLine = strLineIn
-                        End If
+                Dim percentCompleteAtStart As Integer
+                Dim nextPercentComplete As Integer
 
-                        If Not blnDataBlockReached Then
-                            ' Write out the header lines as we read them
-                            srOutFile.WriteLine(strHeaderLine)
-                        End If
+                If blnAssumeFileIsSorted Then
+                    percentCompleteAtStart = 0
+                    nextPercentComplete = 100
+                Else
+                    percentCompleteAtStart = 0
+                    nextPercentComplete = 95
+                End If
+
+                ' Open the input file
+                Using srInFile = New StreamReader(New FileStream(sourceFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+
+                    mFileLengthBytes = srInFile.BaseStream.Length
+
+                    If mColumnCountOverride = 1 Or mColumnCountOverride = 2 Then
+                        columnCount = mColumnCountOverride
+                    Else
+                        ' Set the column count to 0 for now, unless
+                        ' We'll update it when we reach a header line or a data block line
+                        columnCount = 0
                     End If
 
-                    If blnDataBlockReached Then
-                        If intColCount = 0 Then
-                            ' Determine the number of columns of data
+                    strHeaderLine = String.Empty
+                    Do While Not srInFile.EndOfStream
 
-                            If strSplitLine.Length >= 2 AndAlso IsNumeric(strSplitLine(1)) Then
-                                intColCount = 2
-                            ElseIf strSplitLine.Length = 1 And IsNumeric(strSplitLine(0)) Then
-                                intColCount = 1
-                            Else
-                                ' Assume intColCount = 1, even though the input file probably isn't formatted correctly
-                                Debug.Assert(False, "Input file does not have the expected number of columns of data")
-                                intColCount = 1
-                            End If
-                        End If
+                        strLineIn = srInFile.ReadLine()
+                        mFileBytesRead += strLineIn.Length + 2
 
-                        If intColCount = 2 AndAlso strSplitLine.Length >= 2 AndAlso IsNumeric(strSplitLine(1)) Then
-                            Try
-                                With udtData(intLineCount)
-                                    .Key = strSplitLine(0)
-                                    .Value = strSplitLine(1)
-                                    If strSplitLine.Length > 2 Then
-                                        .RemainingCols = strSplitLine(2)
+                        UpdatePercentComplete(mFileBytesRead, mFileLengthBytes, percentCompleteAtStart, nextPercentComplete)
+                        OnProgressUpdate("Processing", mPercentComplete)
+
+                        If mAbortProcessing Then Exit Do
+
+                        If Not strLineIn Is Nothing AndAlso strLineIn.Length > 0 Then
+                            ' Split the line, allowing at most 3 columns (if more than 3, then all data is lumped into the third column)
+                            strSplitLine = strLineIn.Split(strDelimList, 3)
+
+                            If Not blnDataBlockReached Then
+                                ' Haven't found the data block yet, is this a header line?
+                                If columnCount = 1 Then
+                                    If strSplitLine.Length > 0 AndAlso IsNumeric(strSplitLine(0)) Then
+                                        blnDataBlockReached = True
                                     Else
-                                        .RemainingCols = String.Empty
+                                        strHeaderLine = strLineIn
                                     End If
-                                End With
-                                intLineCount += 1
-                            Catch ex As Exception
-                                ' Line parsing error; skip this line
-                            End Try
-                        ElseIf intColCount = 2 AndAlso strSplitLine.Length = 1 AndAlso IsNumeric(strSplitLine(0)) Then
-                            Try
-                                With udtData(intLineCount)
-                                    .Key = strSplitLine(0)
-                                    .Value = "0"
-                                    .RemainingCols = String.Empty
-                                End With
-                                intLineCount += 1
-                            Catch ex As Exception
-                                ' Line parsing error; skip this line
-                            End Try
-                        ElseIf intColCount = 1 AndAlso strSplitLine.Length >= 1 AndAlso IsNumeric(strSplitLine(0)) Then
-                            Try
-                                With udtData(intLineCount)
-                                    .Key = "A"
-                                    .Value = strSplitLine(0)
-                                    If strSplitLine.Length > 1 Then
-                                        .RemainingCols = strSplitLine(1)
-                                        If strSplitLine.Length > 2 Then .RemainingCols &= strSplitLine(2)
+                                ElseIf columnCount = 2 Then
+                                    If strSplitLine.Length > 1 AndAlso IsNumeric(strSplitLine(1)) Then
+                                        blnDataBlockReached = True
                                     Else
-                                        .RemainingCols = String.Empty
+                                        strHeaderLine = strLineIn
                                     End If
+                                ElseIf strSplitLine.Length >= 2 Then
+                                    If Not IsNumeric(strSplitLine(0)) And IsNumeric(strSplitLine(1)) Then
+                                        blnDataBlockReached = True
+                                        columnCount = 2
+                                    Else
+                                        strHeaderLine = strLineIn
+                                    End If
+                                ElseIf strSplitLine.Length = 1 Then
+                                    If IsNumeric(strSplitLine(0)) Then
+                                        blnDataBlockReached = True
+                                        columnCount = 1
+                                    Else
+                                        strHeaderLine = strLineIn
+                                    End If
+                                Else
+                                    strHeaderLine = strLineIn
+                                End If
 
-                                End With
-                                intLineCount += 1
-                            Catch ex As Exception
-                                ' Line parsing error; skip this line
-                            End Try
-                        Else
-                            ' Ignore the line
-                        End If
-
-                        If intLineCount >= udtData.Length Then
-                            ReDim Preserve udtData(udtData.Length + ARRAY_DIM_SIZE)
-                        End If
-
-                        If blnAssumeFileIsSorted Then
-                            If intLineCount > 1 Then
-                                If udtData(intLineCount - 1).Key <> udtData(intLineCount - 2).Key Then
-                                    ' Parse this block
-                                    ' Need to save the latest value in udtDataNextLine since it will be removed from udtData
-
-                                    udtDataNextLine = udtData(intLineCount - 1)
-
-                                    ParseBlock(objOutlierFilter, udtData, intLineCount - 2, intColCount, True, srOutFile)
-
-                                    ' Reset udtData
-                                    intLineCount = 1
-                                    udtData(0) = udtDataNextLine
+                                If Not blnDataBlockReached Then
+                                    ' Write out the header lines as we read them
+                                    swOutFile.WriteLine(strHeaderLine)
                                 End If
                             End If
+
+                            If blnDataBlockReached Then
+                                If columnCount = 0 Then
+                                    ' Determine the number of columns of data
+
+                                    If strSplitLine.Length >= 2 AndAlso IsNumeric(strSplitLine(1)) Then
+                                        columnCount = 2
+                                    ElseIf strSplitLine.Length = 1 And IsNumeric(strSplitLine(0)) Then
+                                        columnCount = 1
+                                    Else
+                                        ' Assume columnCount = 1, even though the input file probably isn't formatted correctly
+                                        Debug.Assert(False, "Input file does not have the expected number of columns of data")
+                                        columnCount = 1
+                                    End If
+                                End If
+
+                                Dim remainingCols As String
+                                If strSplitLine.Length > 2 Then
+                                    remainingCols = strSplitLine(2)
+                                Else
+                                    remainingCols = String.Empty
+                                End If
+
+                                If columnCount = 2 AndAlso strSplitLine.Length >= 2 AndAlso IsNumeric(strSplitLine(1)) Then
+                                    Try
+                                        Dim newDataPoint = New clsFileData(strSplitLine(0), strSplitLine(1), remainingCols)
+                                        lstData.Add(newDataPoint)
+
+                                    Catch ex As Exception
+                                        ' Line parsing error; skip this line
+                                    End Try
+                                ElseIf columnCount = 2 AndAlso strSplitLine.Length = 1 AndAlso IsNumeric(strSplitLine(0)) Then
+                                    Try
+                                        Dim newDataPoint = New clsFileData(strSplitLine(0), "0", String.Empty)
+                                        lstData.Add(newDataPoint)
+
+                                    Catch ex As Exception
+                                        ' Line parsing error; skip this line
+                                    End Try
+                                ElseIf columnCount = 1 AndAlso strSplitLine.Length >= 1 AndAlso IsNumeric(strSplitLine(0)) Then
+                                    Try
+                                        Dim newDataPoint = New clsFileData("A", strSplitLine(0), remainingCols)
+                                        lstData.Add(newDataPoint)
+
+                                    Catch ex As Exception
+                                        ' Line parsing error; skip this line
+                                    End Try
+                                Else
+                                    ' Ignore the line
+                                End If
+
+                                If blnAssumeFileIsSorted Then
+                                    If lstData.Count > 1 Then
+                                        If lstData(lstData.Count - 1).Key <> lstData(lstData.Count - 2).Key Then
+                                            ' Parse this block
+                                            ' Need to save the latest value in udtDataNextLine since it will be removed from lstData
+
+                                            Dim nextDataPoint = lstData(lstData.Count - 1)
+
+                                            ParseBlock(objOutlierFilter, lstData, columnCount, swOutFile)
+
+                                            ' Reset lstData
+                                            lstData.Clear()
+                                            lstData.Add(nextDataPoint)
+                                        End If
+                                    End If
+                                End If
+                            End If
+
                         End If
+                    Loop
+
+                End Using
+
+                If mAbortProcessing Then
+                    SetLocalErrorCode(eListPORErrorCodeCodes.ProcessingAborted)
+                    Return mLocalErrorCode
+                End If
+
+                Dim finalDataBlock = New List(Of clsFileData)
+
+                If Not blnAssumeFileIsSorted Then
+
+                    If lstData.Count > 0 Then
+
+                        ' Sort udtData by Key, then step through the list and process each block, writing to disk as we go
+                        Dim sortedData = (From item In lstData Order By item.Key, item.Value Select item).ToList()
+
+                        intIndexBlockStart = 0
+                        percentCompleteAtStart = nextPercentComplete
+                        nextPercentComplete = 100
+
+                        Dim sortedDataCount = sortedData.Count
+                        For i = 1 To sortedDataCount - 1
+                            If sortedData(i).Key <> sortedData(i - 1).Key Then
+                                ' Parse this block
+                                ' Copy data from sortedData to dataForBlock
+
+                                Dim dataForBlock = New List(Of clsFileData)
+
+                                For sourceIndex = intIndexBlockStart To i - 1
+                                    dataForBlock.Add(sortedData(sourceIndex))
+                                Next
+
+                                ParseBlock(objOutlierFilter, dataForBlock, columnCount, swOutFile)
+
+                                intIndexBlockStart = i
+                            End If
+
+                            UpdatePercentComplete(i, sortedDataCount, percentCompleteAtStart, nextPercentComplete)
+                            OnProgressUpdate("Writing results", mPercentComplete)
+                        Next
+
+                        ' Copy the final elements into finalDataBlock, so that the last block will be written
+                        For sourceIndex = intIndexBlockStart To lstData.Count - 1
+                            finalDataBlock.Add(lstData(sourceIndex))
+                        Next
+
                     End If
 
                 End If
-            Loop
 
-        Catch ex As Exception
-            SetLocalErrorCode(eListPORErrorCodeCodes.ErrorReadingInputFile)
-            Console.WriteLine(GetErrorMessage)
-            Return mLocalErrorCode
-        Finally
-            If Not srInFile Is Nothing Then
-                srInFile.Close()
-            End If
-        End Try
-
-        Try
-            If mAbortProcessing Then
-                SetLocalErrorCode(eListPORErrorCodeCodes.ProcessingAborted)
-            ElseIf Not blnAssumeFileIsSorted Then
-                ' Shrink udtData to the correct size
-
-                If intLineCount > 0 Then
-                    ReDim Preserve udtData(intLineCount - 1)
-
-                    ' Sort udtData by Key, then step through the list and process each block, writing to disk as we go
-                    Array.Sort(udtData, New ComparerFileDataLine)
-
-                    intIndexBlockStart = 0
-                    For intIndex = 1 To udtData.Length - 1
-                        If udtData(intIndex).Key <> udtData(intIndex - 1).Key Then
-                            ' Parse this block
-                            ' Copy data from udtData to udtDataForBlock
-
-                            ReDim udtDataForBlock(intIndex - intIndexBlockStart - 1)
-
-                            For intIndexCopy = intIndexBlockStart To intIndex - 1
-                                udtDataForBlock(intIndexCopy - intIndexBlockStart) = udtData(intIndexCopy)
-                            Next
-
-                            ParseBlock(objOutlierFilter, udtDataForBlock, udtDataForBlock.Length - 1, intColCount, True, srOutFile)
-
-                            intIndexBlockStart = intIndex
-                        End If
-                    Next
-
-                    ' Copy the final elements into the start of udtData, so that the last block will be written
-                    For intIndexCopy = intIndexBlockStart To udtData.Length - 1
-                        udtData(intIndexCopy - intIndexBlockStart) = udtData(intIndexCopy)
-                    Next
-
-                    ' Bump down intLineCount
-                    intLineCount = udtData.Length - intIndexBlockStart
+                If finalDataBlock.Count > 0 And Not mAbortProcessing Then
+                    ' Parse the last block, then close the output file
+                    ParseBlock(objOutlierFilter, finalDataBlock, columnCount, swOutFile)
                 End If
 
-            End If
-
-            If intLineCount > 0 And Not mAbortProcessing Then
-                ' Parse the last block, then close the output file
-                ParseBlock(objOutlierFilter, udtData, intLineCount - 1, intColCount, True, srOutFile)
-            End If
-
+            End Using
 
         Catch ex As Exception
             SetLocalErrorCode(eListPORErrorCodeCodes.ErrorWritingOutputFile)
-            Console.WriteLine(GetErrorMessage)
+            OnErrorEvent(GetErrorMessage())
             Return mLocalErrorCode
-
-        Finally
-            If Not srOutFile Is Nothing Then
-                srOutFile.Close()
-            End If
         End Try
 
         Return mLocalErrorCode
     End Function
 
-    Private Sub SetLocalErrorCode(ByVal eNewErrorCode As eListPORErrorCodeCodes)
+    Private Sub SetLocalErrorCode(eNewErrorCode As eListPORErrorCodeCodes)
         SetLocalErrorCode(eNewErrorCode, False)
     End Sub
 
-    Private Sub SetLocalErrorCode(ByVal eNewErrorCode As eListPORErrorCodeCodes, ByVal blnLeaveExistingErrorCodeUnchanged As Boolean)
+    Private Sub SetLocalErrorCode(eNewErrorCode As eListPORErrorCodeCodes, blnLeaveExistingErrorCodeUnchanged As Boolean)
 
         If blnLeaveExistingErrorCodeUnchanged AndAlso mLocalErrorCode <> eListPORErrorCodeCodes.NoError Then
             ' An error code is already defined; do not change it
@@ -708,7 +647,7 @@ Public Class clsListPOR
 
     End Sub
 
-    Private Function SymmetricValueToNormalValue(ByVal dblSymmetricValue As Double) As Double
+    Private Function SymmetricValueToNormalValue(dblSymmetricValue As Double) As Double
         '------------------------------------------------------
         'Converts shifted symmetric value to normal value
         '------------------------------------------------------
@@ -725,66 +664,51 @@ Public Class clsListPOR
 
     End Function
 
-    Private Sub WriteBlockLine(ByRef srOutFile As System.IO.StreamWriter, ByVal intColCount As Integer, ByRef udtData As udtFileDataType, ByVal blnAppendGroupAverage As Boolean, ByVal dblaverage As Double)
+    Private Sub UpdatePercentComplete(stepsComplete As Long, totalSteps As Long, percentCompleteAtStart As Integer, nextPercentComplete As Integer)
+
+        Try
+            If totalSteps > 0 Then
+                Dim subtaskPercentComplete = CType(stepsComplete / (totalSteps / 100.0), Single)
+
+                Dim deltaPercentComplete = nextPercentComplete - percentCompleteAtStart
+
+                If deltaPercentComplete > 0 Then
+                    mPercentComplete = percentCompleteAtStart + subtaskPercentComplete * deltaPercentComplete / 100
+                Else
+                    mPercentComplete = subtaskPercentComplete
+                End If
+
+                If mPercentComplete > 100 Then mPercentComplete = 100
+            Else
+                mPercentComplete = 0
+            End If
+
+        Catch ex As Exception
+            OnErrorEvent("Error in UpdatePercentComplete")
+        End Try
+
+    End Sub
+
+    Private Sub WriteBlockLine(swOutFile As TextWriter, columnCount As Integer, dataPoint As clsFileData, blnAppendGroupAverage As Boolean, dblAverage As Double)
 
         Dim strOutputLine As String
 
-        With udtData
-
-            If intColCount = 2 Then
-                strOutputLine = .Key & ControlChars.Tab & .Value
-            Else
-                strOutputLine = .Value
-            End If
-
-            If Not .RemainingCols Is Nothing AndAlso .RemainingCols.Length > 0 Then
-                strOutputLine &= ControlChars.Tab & .RemainingCols
-            End If
-
-            If blnAppendGroupAverage Then
-                strOutputLine &= ControlChars.Tab & Math.Round(dblaverage, 8).ToString
-            End If
-
-            srOutFile.WriteLine(strOutputLine)
-        End With
-
-    End Sub
-
-    Public Sub New()
-        mAssumeSortedInputFile = False
-        mRemoveMultipleValues = True
-        mConfidenceLevel = clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants.e95Pct
-        mMinFinalValueCount = 3
-        mColumnCountOverride = 0
-        mUseSymmetricValues = False
-        UseNaturalLogValues = False
-        mAppendGroupAverage = True
-
-        mLocalErrorCode = eListPORErrorCodeCodes.NoError
-    End Sub
-End Class
-
-Public Class ComparerFileDataLine
-    Implements System.Collections.IComparer
-
-    Public Function Compare(ByVal x As Object, ByVal y As Object) As Integer Implements IComparer.Compare
-        Dim xData As clsListPOR.udtFileDataType = CType(x, clsListPOR.udtFileDataType)
-        Dim yData As clsListPOR.udtFileDataType = CType(y, clsListPOR.udtFileDataType)
-
-        If (xData.Key > yData.Key) Then
-            Return 1
-        ElseIf xData.Key < yData.Key Then
-            Return -1
+        If columnCount = 2 Then
+            strOutputLine = dataPoint.Key & ControlChars.Tab & dataPoint.Value
         Else
-            If (xData.Value > yData.Value) Then
-                Return 1
-            ElseIf xData.Value < yData.Value Then
-                Return -1
-            Else
-                Return 0
-            End If
-
+            strOutputLine = dataPoint.Value
         End If
-    End Function
+
+        If Not String.IsNullOrWhiteSpace(dataPoint.RemainingCols) Then
+            strOutputLine &= ControlChars.Tab & dataPoint.RemainingCols
+        End If
+
+        If blnAppendGroupAverage Then
+            strOutputLine &= ControlChars.Tab & PRISM.StringUtilities.ValueToString(dblAverage, 5)
+        End If
+
+        swOutFile.WriteLine(strOutputLine)
+
+    End Sub
 
 End Class

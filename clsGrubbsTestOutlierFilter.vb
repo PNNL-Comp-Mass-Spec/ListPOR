@@ -1,5 +1,9 @@
 Option Strict On
 
+Imports System.Collections.Generic
+Imports System.Linq
+Imports System.Runtime.InteropServices
+
 ' This class can be used to remove outliers from a list of numbers (doubles)
 ' It uses Grubb's test to determine whether or not each number in the list
 '  is far enough away from the mean to be thrown out
@@ -13,9 +17,9 @@ Option Strict On
 ' E-mail: matthew.monroe@pnl.gov or matt@alchemistmatt.com
 ' Website: http://ncrr.pnl.gov/ or http://www.sysbio.org/resources/staff/
 ' -------------------------------------------------------------------------------
-' 
+'
 ' Licensed under the Apache License, Version 2.0; you may not use this file except
-' in compliance with the License.  You may obtain a copy of the License at 
+' in compliance with the License.  You may obtain a copy of the License at
 ' http://www.apache.org/licenses/LICENSE-2.0
 '
 
@@ -35,209 +39,181 @@ Public Class clsGrubbsTestOutlierFilter
 
 #Region "Interface functions"
 
-    Public Property ConfidenceLevel() As eclConfidenceLevelConstants
+    Public Property ConfidenceLevel As eclConfidenceLevelConstants
         Get
             Return mConfidenceLevel
         End Get
-        Set(ByVal Value As eclConfidenceLevelConstants)
+        Set
             mConfidenceLevel = Value
         End Set
     End Property
 
-    Public Property MinFinalValueCount() As Integer
+    Public Property MinFinalValueCount As Integer
         Get
             Return mMinFinalValueCount
         End Get
-        Set(ByVal Value As Integer)
+        Set
             If Value < 2 Then Value = 2
             mMinFinalValueCount = Value
         End Set
     End Property
 
-    Public Property RemoveMultipleValues() As Boolean
+    Public Property RemoveMultipleValues As Boolean
         Get
             Return mIterate
         End Get
-        Set(ByVal Value As Boolean)
+        Set
             mIterate = Value
         End Set
     End Property
 #End Region
 
-    Public Function RemoveOutliers(ByRef dblValues() As Double, ByRef intIndexPointers() As Integer, ByRef intValueCountRemovedOut As Integer) As Boolean
-        ' Removes outliers from dblValues() using Grubb's test and the given confidence level
+    Public Function FindOutliers(lstData As List(Of Double), <Out> ByRef outlierIndices As SortedSet(Of Integer)) As Boolean
+        ' Uses Grubb's test to identify outliers in lstData (at a given confidence level)
         ' intIndexPointers() is an array of integers that is parallel to dblValues(), and will be
         '  kept in sync with any changes made to dblValues
 
         ' If intMaxIterations > 1, then will repeatedly remove the outliers, until no outliers
         '  remain or the number of values falls below intMinValues
         '
-        ' Returns True if success (even if no values removed) and false if an error or dblValuesSorted doesn't contain any data
+        ' Returns True if success (even if no values removed) and false if an error or sortedValues doesn't contain any data
         ' Returns the number of values removed in intValueCountRemovedOut
 
-        Dim dblValuesSorted() As Double         ' Sorted array of doubles            ' 0-based array
-        Dim intIndexPointersSorted() As Integer
+        outlierIndices = New SortedSet(Of Integer)
 
-        Dim blnSuccess As Boolean
-        Dim blnValuesRemoved As Boolean
-
-        If dblValues.Length <= mMinFinalValueCount Then
+        If lstData.Count <= mMinFinalValueCount Then
             ' Cannot remove outliers since not enough members
-            intValueCountRemovedOut = 0
             Return True
         End If
 
         Try
-            dblValuesSorted = dblValues
-            intIndexPointersSorted = intIndexPointers
 
-            Array.Sort(dblValuesSorted, intIndexPointersSorted)
+            Dim sortedValues = lstData.ToArray()
+            Dim indexPointers(sortedValues.Length - 1) As Integer
 
-            If dblValuesSorted.Length > 0 Then
-                blnSuccess = True
-            Else
-                blnSuccess = False
-            End If
+            For i = 0 To sortedValues.Length - 1
+                indexPointers(i) = i
+            Next
+
+            Array.Sort(sortedValues, indexPointers)
+
+            Dim sortedDataCount = sortedValues.Count
+
+            Do
+                Dim candidateOutlierIndex As Integer
+                Dim outlierFound = FindOutlierWork(sortedValues, sortedDataCount, mConfidenceLevel, candidateOutlierIndex)
+
+                If Not outlierFound Then
+                    Exit Do
+                End If
+
+                outlierIndices.Add(indexPointers(candidateOutlierIndex))
+
+                ' Remove the outlier by copying data in place
+                Dim targetIndex = 0
+                For i = 0 To sortedDataCount - 1
+                    If i = candidateOutlierIndex Then Continue For
+
+                    sortedValues(targetIndex) = sortedValues(i)
+                    indexPointers(targetIndex) = indexPointers(i)
+                    targetIndex += 1
+                Next
+                sortedDataCount -= 1
+
+            Loop While mIterate And sortedDataCount > mMinFinalValueCount
+
+            Return True
 
         Catch ex As Exception
-            blnSuccess = False
+            outlierIndices = New SortedSet(Of Integer)
+            Return False
         End Try
-
-        If dblValuesSorted.Length <= 0 Or Not blnSuccess Then
-            blnSuccess = False
-        Else
-            Try
-                ' Copy the data from dblValuesSorted back to dblValues
-                dblValues = dblValuesSorted
-                intIndexPointers = intIndexPointersSorted
-
-                intValueCountRemovedOut = 0
-                Do
-                    blnValuesRemoved = RemoveOutliersWork(dblValues, intIndexPointers, mConfidenceLevel)
-
-                    If blnValuesRemoved Then
-                        intValueCountRemovedOut += 1
-                    End If
-
-                Loop While blnValuesRemoved And mIterate And dblValues.Length > mMinFinalValueCount
-                blnSuccess = True
-
-            Catch ex As Exception
-                blnSuccess = False
-            End Try
-        End If
-
-        RemoveOutliers = blnSuccess
 
     End Function
 
-    Private Function RemoveOutliersWork(ByRef dblValues() As Double, ByRef intIndexPointers() As Integer, ByVal eclConfidenceLevel As eclConfidenceLevelConstants) As Boolean
+    Private Function FindOutlierWork(
+      sortedValues As IList(Of Double),
+      dataCount As Integer,
+      eclConfidenceLevel As eclConfidenceLevelConstants,
+      <Out> ByRef candidateOutlierIndex As Integer) As Boolean
+
         ' Removes, at most, one outlier from dblValues (and from the corresponding position in intIndexPointers)
         ' Returns True if an outlier is removed, and false if not
         ' Returns false if an error occurs
         '
-        ' NOTE: This function assumes that dblValues() is sorted ascending, and thus only tests
+        ' NOTE: This function assumes that sortedValues() is sorted ascending, and thus only tests
         '       the first and last value in the list as an outlier (removing only one of them, if appropriate)
+        ' NOTE 2: This function does not use sortedValues.Count; it instead trusts that dataCount lists the number of items in the array
 
-        Dim objStatDoubles As New clsStatDoubles
-        Dim blnValueRemoved As Boolean
+        candidateOutlierIndex = -1
 
-        Dim intCount As Integer
-
-        Dim intIndex As Integer, intIndex2 As Integer
-        Dim intTargetIndex As Integer
-        Dim dblTargetDistance As Double
-        Dim dblCompareDistance As Double
-
-        Dim dblMean As Double
-        Dim dblStDev As Double
-        Dim dblZScore As Double
-        Dim dblPValue As Double
+        If dataCount < 3 Then
+            ' Cannot remove an outlier from fewer than 3 values
+            Return False
+        End If
 
         Try
-            intCount = dblValues.Length
-            If intCount < 3 Then
-                ' Cannot remove an outlier from fewer than 3 values
-                RemoveOutliersWork = False
-                Exit Function
+            Dim dblMean As Double = MathNet.Numerics.Statistics.ArrayStatistics.Mean(sortedValues.Take(dataCount).ToArray())
+            Dim dblStDev As Double = MathNet.Numerics.Statistics.ArrayStatistics.StandardDeviation(sortedValues.Take(dataCount).ToArray())
+
+            If dblStDev <= 0 Then
+                Return False
             End If
 
-        Catch ex As Exception
-            RemoveOutliersWork = False
-            Exit Function
-        End Try
+            candidateOutlierIndex = 0
 
-        Try
-            blnValueRemoved = False
-            If objStatDoubles.Fill(dblValues) Then
-                dblMean = objStatDoubles.Mean
-                dblStDev = objStatDoubles.StDev
+            ' Find the value furthest away from the mean
+            ' Since dblValues() is sorted, it can only be the first or last value
 
-                If dblStDev > 0 Then
-                    ' Find the value furthest away from the mean
-                    ' Since dblValues() is sorted, it can only be the first or last value
+            Dim dblTargetDistance As Double = Math.Abs(sortedValues(0) - dblMean)
 
-                    intTargetIndex = 0
-                    dblTargetDistance = Math.Abs(dblValues(0) - dblMean)
-
-                    dblCompareDistance = Math.Abs(dblValues(intCount - 1) - dblMean)
-                    If dblCompareDistance > dblTargetDistance Then
-                        dblTargetDistance = dblCompareDistance
-                        intTargetIndex = intCount - 1
-                    End If
-
-                    ' Compute the z-score for intTargetIndex
-                    dblZScore = dblTargetDistance / dblStDev
-
-                    If intCount = 3 Then
-                        ' When there are 3 values in the list, the p-value is always 1.15, regardless of the confidence level
-                        dblPValue = 1.15
-                    Else
-                        ' Compute the p-value, based on eclConfidenceLevel
-                        Select Case eclConfidenceLevel
-                            Case eclConfidenceLevelConstants.e95Pct
-                                ' Estimate the P value at the 95%'ile using a formula provided by
-                                '  Robin Edwards <robin.edwards@argonet.co.uk>
-                                dblPValue = (3.6996 * intCount + 145.9 - 186.7 / intCount) / (intCount + 59.5 + 58.5 / intCount)
-                            Case eclConfidenceLevelConstants.e97Pct
-                                dblPValue = Lookup97PctPValue(intCount)
-                            Case Else
-                                ' Includes eclConfidenceLevelConstants.e99pct
-                                ' Estimate the P value at the 99%'ile using a formula provided by
-                                '  Robin Edwards <robin.edwards@argonet.co.uk>
-                                dblPValue = (4.1068 * intCount + 273.6 - 328.5 / intCount) / (intCount + 88.7 + 185 / intCount)
-                        End Select
-                    End If
-
-                    If dblZScore > dblPValue Then
-                        ' Remove the value
-                        ' Copy the data in place, skipping the outlier value
-
-                        intIndex2 = 0
-                        For intIndex = 0 To intCount - 1
-                            If intIndex <> intTargetIndex Then
-                                dblValues(intIndex2) = dblValues(intIndex)
-                                intIndexPointers(intIndex2) = intIndexPointers(intIndex)
-                                intIndex2 += 1
-                            End If
-                        Next intIndex
-
-                        ReDim Preserve dblValues(intCount - 2)
-                        ReDim Preserve intIndexPointers(intCount - 2)
-                        blnValueRemoved = True
-                    End If
-                End If
+            Dim dblCompareDistance As Double = Math.Abs(sortedValues(dataCount - 1) - dblMean)
+            If dblCompareDistance > dblTargetDistance Then
+                dblTargetDistance = dblCompareDistance
+                candidateOutlierIndex = dataCount - 1
             End If
 
-        Catch ex As Exception
-            blnValueRemoved = False
-        End Try
+            ' Compute the z-score for candidateOutlierIndex
+            Dim dblZScore As Double = dblTargetDistance / dblStDev
+            Dim dblPValue As Double
 
-        RemoveOutliersWork = blnValueRemoved
+            If dataCount = 3 Then
+                ' When there are 3 values in the list, the p-value is always 1.15, regardless of the confidence level
+                dblPValue = 1.15
+            Else
+                ' Compute the p-value, based on eclConfidenceLevel
+                Select Case eclConfidenceLevel
+                    Case eclConfidenceLevelConstants.e95Pct
+                        ' Estimate the P value at the 95%'ile using a formula provided by
+                        '  Robin Edwards <robin.edwards@argonet.co.uk>
+                        dblPValue = (3.6996 * dataCount + 145.9 - 186.7 / dataCount) /
+                                    (dataCount + 59.5 + 58.5 / dataCount)
+                    Case eclConfidenceLevelConstants.e97Pct
+                        dblPValue = Lookup97PctPValue(dataCount)
+                    Case Else
+                        ' Includes eclConfidenceLevelConstants.e99pct
+                        ' Estimate the P value at the 99%'ile using a formula provided by
+                        '  Robin Edwards <robin.edwards@argonet.co.uk>
+                        dblPValue = (4.1068 * dataCount + 273.6 - 328.5 / dataCount) /
+                                    (dataCount + 88.7 + 185 / dataCount)
+                End Select
+            End If
+
+            If dblZScore > dblPValue Then
+                Return True
+            End If
+
+            candidateOutlierIndex = -1
+            Return False
+
+        Catch ex As Exception
+            candidateOutlierIndex = -1
+            Return False
+        End Try
 
     End Function
 
-    Private Function Lookup97PctPValue(ByVal intCount As Integer) As Double
+    Private Function Lookup97PctPValue(intCount As Integer) As Double
 
         If intCount <= 3 Then
             Return 1.15
