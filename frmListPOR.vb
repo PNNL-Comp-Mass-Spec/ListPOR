@@ -67,6 +67,7 @@ Public Class frmListPOR
     Friend WithEvents cmdStart As System.Windows.Forms.Button
     Friend WithEvents mnuHelpOverview As System.Windows.Forms.MenuItem
     Friend WithEvents txtStatus As TextBox
+    Friend WithEvents chkAssumeSorted As CheckBox
     Friend WithEvents mnuHelpSep1 As System.Windows.Forms.MenuItem
     <System.Diagnostics.DebuggerStepThrough()> Private Sub InitializeComponent()
         Me.components = New System.ComponentModel.Container()
@@ -101,6 +102,7 @@ Public Class frmListPOR
         Me.cmdExit = New System.Windows.Forms.Button()
         Me.cmdStart = New System.Windows.Forms.Button()
         Me.txtStatus = New System.Windows.Forms.TextBox()
+        Me.chkAssumeSorted = New System.Windows.Forms.CheckBox()
         Me.fraOptions.SuspendLayout()
         Me.fraFilePaths.SuspendLayout()
         Me.fraControls.SuspendLayout()
@@ -108,6 +110,7 @@ Public Class frmListPOR
         '
         'fraOptions
         '
+        Me.fraOptions.Controls.Add(Me.chkAssumeSorted)
         Me.fraOptions.Controls.Add(Me.chkUseNaturalLogValues)
         Me.fraOptions.Controls.Add(Me.chkUseSymmetricValues)
         Me.fraOptions.Controls.Add(Me.txtMinimumFinalDataPointCount)
@@ -116,7 +119,7 @@ Public Class frmListPOR
         Me.fraOptions.Controls.Add(Me.chkIterateRemoval)
         Me.fraOptions.Location = New System.Drawing.Point(10, 157)
         Me.fraOptions.Name = "fraOptions"
-        Me.fraOptions.Size = New System.Drawing.Size(297, 166)
+        Me.fraOptions.Size = New System.Drawing.Size(297, 192)
         Me.fraOptions.TabIndex = 2
         Me.fraOptions.TabStop = False
         Me.fraOptions.Text = "Options"
@@ -183,7 +186,7 @@ Public Class frmListPOR
         Me.fraFilePaths.Controls.Add(Me.txtInputFilePath)
         Me.fraFilePaths.Location = New System.Drawing.Point(10, 18)
         Me.fraFilePaths.Name = "fraFilePaths"
-        Me.fraFilePaths.Size = New System.Drawing.Size(573, 130)
+        Me.fraFilePaths.Size = New System.Drawing.Size(562, 130)
         Me.fraFilePaths.TabIndex = 1
         Me.fraFilePaths.TabStop = False
         Me.fraFilePaths.Text = "File Paths"
@@ -191,7 +194,7 @@ Public Class frmListPOR
         'cmdBrowseForOutputFile
         '
         Me.cmdBrowseForOutputFile.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.cmdBrowseForOutputFile.Location = New System.Drawing.Point(497, 92)
+        Me.cmdBrowseForOutputFile.Location = New System.Drawing.Point(486, 92)
         Me.cmdBrowseForOutputFile.Name = "cmdBrowseForOutputFile"
         Me.cmdBrowseForOutputFile.Size = New System.Drawing.Size(67, 23)
         Me.cmdBrowseForOutputFile.TabIndex = 5
@@ -211,14 +214,14 @@ Public Class frmListPOR
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.txtOutputFilePath.Location = New System.Drawing.Point(19, 92)
         Me.txtOutputFilePath.Name = "txtOutputFilePath"
-        Me.txtOutputFilePath.Size = New System.Drawing.Size(468, 22)
+        Me.txtOutputFilePath.Size = New System.Drawing.Size(457, 22)
         Me.txtOutputFilePath.TabIndex = 4
         Me.txtOutputFilePath.Text = "Output file"
         '
         'cmdBrowseForInputFile
         '
         Me.cmdBrowseForInputFile.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.cmdBrowseForInputFile.Location = New System.Drawing.Point(497, 37)
+        Me.cmdBrowseForInputFile.Location = New System.Drawing.Point(486, 37)
         Me.cmdBrowseForInputFile.Name = "cmdBrowseForInputFile"
         Me.cmdBrowseForInputFile.Size = New System.Drawing.Size(67, 23)
         Me.cmdBrowseForInputFile.TabIndex = 2
@@ -238,7 +241,7 @@ Public Class frmListPOR
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.txtInputFilePath.Location = New System.Drawing.Point(19, 37)
         Me.txtInputFilePath.Name = "txtInputFilePath"
-        Me.txtInputFilePath.Size = New System.Drawing.Size(468, 22)
+        Me.txtInputFilePath.Size = New System.Drawing.Size(457, 22)
         Me.txtInputFilePath.TabIndex = 1
         Me.txtInputFilePath.Text = "Input file"
         '
@@ -249,7 +252,7 @@ Public Class frmListPOR
         Me.fraControls.Controls.Add(Me.pbarProgress)
         Me.fraControls.Location = New System.Drawing.Point(317, 157)
         Me.fraControls.Name = "fraControls"
-        Me.fraControls.Size = New System.Drawing.Size(265, 55)
+        Me.fraControls.Size = New System.Drawing.Size(254, 55)
         Me.fraControls.TabIndex = 3
         Me.fraControls.TabStop = False
         Me.fraControls.Text = "Progress"
@@ -260,7 +263,7 @@ Public Class frmListPOR
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.pbarProgress.Location = New System.Drawing.Point(10, 18)
         Me.pbarProgress.Name = "pbarProgress"
-        Me.pbarProgress.Size = New System.Drawing.Size(237, 28)
+        Me.pbarProgress.Size = New System.Drawing.Size(226, 28)
         Me.pbarProgress.Style = System.Windows.Forms.ProgressBarStyle.Continuous
         Me.pbarProgress.TabIndex = 2
         '
@@ -349,13 +352,21 @@ Public Class frmListPOR
         Me.txtStatus.Location = New System.Drawing.Point(327, 280)
         Me.txtStatus.Name = "txtStatus"
         Me.txtStatus.ReadOnly = True
-        Me.txtStatus.Size = New System.Drawing.Size(237, 22)
+        Me.txtStatus.Size = New System.Drawing.Size(226, 22)
         Me.txtStatus.TabIndex = 8
+        '
+        'chkAssumeSorted
+        '
+        Me.chkAssumeSorted.Location = New System.Drawing.Point(19, 162)
+        Me.chkAssumeSorted.Name = "chkAssumeSorted"
+        Me.chkAssumeSorted.Size = New System.Drawing.Size(192, 24)
+        Me.chkAssumeSorted.TabIndex = 6
+        Me.chkAssumeSorted.Text = "Assume sorted"
         '
         'frmListPOR
         '
         Me.AutoScaleBaseSize = New System.Drawing.Size(6, 15)
-        Me.ClientSize = New System.Drawing.Size(593, 407)
+        Me.ClientSize = New System.Drawing.Size(582, 354)
         Me.Controls.Add(Me.txtStatus)
         Me.Controls.Add(Me.cmdExit)
         Me.Controls.Add(Me.cmdStart)
@@ -363,7 +374,7 @@ Public Class frmListPOR
         Me.Controls.Add(Me.fraFilePaths)
         Me.Controls.Add(Me.fraOptions)
         Me.Menu = Me.MainMenu1
-        Me.MinimumSize = New System.Drawing.Size(570, 0)
+        Me.MinimumSize = New System.Drawing.Size(600, 425)
         Me.Name = "frmListPOR"
         Me.Text = "ListPOR - List Parser for Outlier Removal"
         Me.fraOptions.ResumeLayout(False)
@@ -492,26 +503,6 @@ Public Class frmListPOR
         End With
     End Sub
 
-    Private Sub PositionControls()
-        'Dim intDesiredLocation As Integer
-
-        'Try
-        '    ' The following could be used to Center the controls
-        '    With cmdStart
-        '        intDesiredLocation = pnlFiles.Width / 2 - .Width - 10
-        '        If intDesiredLocation < 1 Then intDesiredLocation = 1
-        '        cmdStart.Left = intDesiredLocation
-        '    End With
-
-        '    With cmdExit
-        '        .Left = cmdStart.Left + cmdStart.Width + 20
-        '    End With
-        'Catch ex As Exception
-        '    Debug.Assert(False, "Error positioning controls")
-        'End Try
-
-    End Sub
-
     Private Sub SelectInputFile()
         Try
             Dim strNewFilePath As String
@@ -598,7 +589,7 @@ Public Class frmListPOR
                             cmdStart.Text = "&Abort"
 
                             With mListPOR
-                                .AssumeSortedInputFile = False
+                                .AssumeSortedInputFile = chkAssumeSorted.Checked
                                 .RemoveMultipleValues = chkIterateRemoval.Checked
                                 .ConfidenceLevel = CType(cboConfidenceLevel.SelectedIndex, clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants)
                                 If IsNumeric(txtMinimumFinalDataPointCount.Text) Then
@@ -661,6 +652,8 @@ Public Class frmListPOR
                 txtInputFilePath.Text = objXmlFile.GetParam(XML_FILE_OPTIONS_SECTION, "InputFilePath", txtInputFilePath.Text)
                 txtOutputFilePath.Text = objXmlFile.GetParam(XML_FILE_OPTIONS_SECTION, "OutputFilePath", txtOutputFilePath.Text)
 
+                chkAssumeSorted.Checked = objXmlFile.GetParam(XML_FILE_OPTIONS_SECTION, "AssumeSorted", chkAssumeSorted.Checked)
+
                 intConfidenceValue = clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants.e95Pct
                 intConfidenceValue = objXmlFile.GetParam(XML_FILE_OPTIONS_SECTION, "ConfidenceValueIndex", intConfidenceValue)
 
@@ -702,6 +695,8 @@ Public Class frmListPOR
                     ' Continue saving settings
 
                     objXmlFile.SetParam(XML_FILE_OPTIONS_SECTION, "OutputFilePath", txtOutputFilePath.Text)
+
+                    objXmlFile.SetParam(XML_FILE_OPTIONS_SECTION, "AssumeSorted", chkAssumeSorted.Checked)
 
                     If cboConfidenceLevel.SelectedIndex >= 0 Then
                         objXmlFile.SetParam(XML_FILE_OPTIONS_SECTION, "ConfidenceValueIndex", cboConfidenceLevel.SelectedIndex)
@@ -762,11 +757,6 @@ Public Class frmListPOR
         InitializeControls(False)
 
         XMLReadSettings()
-        PositionControls()
-    End Sub
-
-    Private Sub frmListPOR_Resize(sender As Object, e As EventArgs) Handles MyBase.Resize
-        PositionControls()
     End Sub
 
     Private Sub txtMinimumFinalDataPointCount_TextChanged(sender As Object, e As EventArgs) Handles txtMinimumFinalDataPointCount.TextChanged
