@@ -2,6 +2,7 @@ Option Strict On
 
 Imports System.IO
 Imports System.Reflection
+Imports System.Threading
 Imports PRISM
 
 ' -------------------------------------------------------------------------------
@@ -35,7 +36,7 @@ Module modMain
     Private Const SW_HIDE As Integer = 0
     ' Private Const SW_SHOW As Integer = 5
 
-    Public Const PROGRAM_DATE As String = "September 12, 2017"
+    Public Const PROGRAM_DATE As String = "September 13, 2017"
 
     Private WithEvents mListPORClass As clsListPOR
     Private mInputFilePath As String
@@ -111,7 +112,7 @@ Module modMain
         ' Returns True if no problems; otherwise, returns false
 
         Dim strValue = String.Empty
-        Dim strValidParameters = New String() {"I", "O", "S", "L", "M", "C"}
+        Dim strValidParameters = New String() {"I", "O", "Sorted", "L", "M", "C", "Conf"}
 
         Try
             ' Make sure no invalid parameters are present
@@ -121,18 +122,47 @@ Module modMain
 
                 ' Query objParseCommandLine to see if various parameters are present
                 With objParseCommandLine
-                    If .RetrieveValueForParameter("I", strValue) Then mInputFilePath = strValue
-                    If .RetrieveValueForParameter("O", strValue) Then mOutputFilePath = strValue
-                    If .RetrieveValueForParameter("S", strValue) Then mListPORClass.AssumeSortedInputFile = True
+
+                    If .NonSwitchParameterCount > 0 Then
+                        mInputFilePath = .RetrieveNonSwitchParameter(0)
+                    Else
+                        If .RetrieveValueForParameter("I", strValue) Then mInputFilePath = strValue
+                    End If
+
+                    If .NonSwitchParameterCount > 1 Then
+                        mOutputFilePath = .RetrieveNonSwitchParameter(1)
+                    Else
+                        If .RetrieveValueForParameter("O", strValue) Then mOutputFilePath = strValue
+                    End If
+
+                    If .RetrieveValueForParameter("Sorted", strValue) Then mListPORClass.AssumeSortedInputFile = True
+
                     If .RetrieveValueForParameter("L", strValue) Then mListPORClass.UseSymmetricValues = True
+
                     If .RetrieveValueForParameter("M", strValue) Then
                         If IsNumeric(strValue) Then
                             mListPORClass.MinFinalValueCount = CType(strValue, Integer)
                         End If
                     End If
+
                     If .RetrieveValueForParameter("C", strValue) Then
                         If IsNumeric(strValue) Then
                             mListPORClass.ColumnCountOverride = CType(strValue, Integer)
+                        End If
+                    End If
+
+                    If .RetrieveValueForParameter("Conf", strValue) Then
+                        If IsNumeric(strValue) Then
+                            Dim confidenceInterval = CType(strValue, Integer)
+                            Select Case confidenceInterval
+                                Case 95
+                                    mListPORClass.ConfidenceLevel = clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants.e95Pct
+                                Case 97
+                                    mListPORClass.ConfidenceLevel = clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants.e97Pct
+                                Case 99
+                                    mListPORClass.ConfidenceLevel = clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants.e99Pct
+                            End Select
+
                         End If
                     End If
 
@@ -143,7 +173,7 @@ Module modMain
 
         Catch ex As Exception
             ConsoleMsgUtils.ShowError("Error parsing the command line parameters", ex)
-            Threading.Thread.Sleep(1500)
+            Thread.Sleep(1500)
             Return False
         End Try
 
@@ -154,18 +184,29 @@ Module modMain
         Try
 
             Console.WriteLine("ListPOR (List Parser for Outlier Removal)")
-            Console.WriteLine("Reads a tab-delimeted file of groups of data and removes outliers from each group of data points.")
+            Console.WriteLine("Reads a tab-delimited file of groups of data and removes outliers from each group of data points.")
             Console.WriteLine()
             Console.WriteLine("Program syntax:" & Path.GetFileName(Assembly.GetExecutingAssembly().Location))
-            Console.WriteLine(" /I:InputFilePath [/O:OutputFilePath] [/S] [/L] [/M:MinimumFinalDataPointCount] [/C:ColumnCount] [/Q]")
+            Console.WriteLine("/I:InputFilePath [/O:OutputFilePath] [/Sorted] [/L] [/M:MinimumFinalDataPointCount] [/C:ColumnCount] [/Conf:#]")
             Console.WriteLine()
-            Console.WriteLine("The output file path is optional.  If omitted, the output file will be created in the same folder as the input file, but with _filtered appended to the name")
-            Console.WriteLine(" /S indicates that the input file is already sorted by group.  This allows very large files to be processed, since the entire file does not need to be cached in memory.")
-            Console.WriteLine(" /L will cause the program to convert the data to symmetric values, prior to looking for outliers.  This is appropriate for data where a value of 1 is unchanged, >1 is an increase, and <1 is a decrease.  This is not appropriate for data with values of 0 or less than 0.")
-            Console.WriteLine(" /M is the minimum number of data points that must remain in the group.  It cannot be less than 3")
-            Console.WriteLine(" /C:1 can be used to indicate that there is only 1 column of data to analyze; if other columns of text are present after the first column, they will be written to the output file, but will not be considered for outlier removal.  Use /C:2 to specify that there are two columns to be examined: a Key column and a Value column.  Again, additional columns will be written to disk, but not utilized for comparison purposes. ")
+            Console.WriteLine("The input file is a tab-delimited data file with one or more columns of data; specify it using /I or by simply using the file path (use double quotes if spaces in the path)")
             Console.WriteLine()
-
+            Console.WriteLine("The output file path is optional. If omitted, the output file will be created in the same folder as the input file, but with _filtered appended to the name")
+            Console.WriteLine()
+            Console.WriteLine("/Sorted indicates that the input file is already sorted by group. This allows very large files to be processed, since the entire file does not need to be cached in memory. It is also useful for obtaining a filtered file with data in the exact same order as the input file.")
+            Console.WriteLine()
+            Console.WriteLine("/L will cause the program to convert the data to symmetric values, prior to looking for outliers. This is appropriate for data where a value of 1 is unchanged, >1 is an increase, and <1 is a decrease. This is not appropriate for data with values of 0 or less than 0.")
+            Console.WriteLine()
+            Console.WriteLine("/M is the minimum number of data points that must remain in the group. It cannot be less than 3")
+            Console.WriteLine()
+            Console.WriteLine("/C:1 can be used to indicate that there is only 1 column of data to analyze; if other columns of text are present after the first column, they will be written to the output file, but will not be considered for outlier removal. Use /C:2 to specify that there are two columns to be examined: a Key column and a Value column. Again, additional columns will be written to disk, but not utilized for comparison purposes. ")
+            Console.WriteLine()
+            Console.WriteLine("/Conf can be used to specify the confidence level; options are")
+            Console.WriteLine("  /Conf:95")
+            Console.WriteLine("  /Conf:97")
+            Console.WriteLine("  /Conf:99")
+            Console.WriteLine()
+            Console.WriteLine()
             Console.WriteLine("Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2004")
 
             Console.WriteLine("This is version " & Application.ProductVersion & " (" & PROGRAM_DATE & ")")
@@ -177,11 +218,11 @@ Module modMain
             Console.WriteLine("Licensed under the Apache License, Version 2.0; you may not use this file except in compliance with the License.")
             Console.WriteLine("You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0")
 
-
         Catch ex As Exception
             ConsoleMsgUtils.ShowError("Error displaying the program syntax", ex)
-            Threading.Thread.Sleep(1500)
         End Try
+
+        Thread.Sleep(1500)
 
     End Sub
 
