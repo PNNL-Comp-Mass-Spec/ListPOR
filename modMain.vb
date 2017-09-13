@@ -46,28 +46,24 @@ Module modMain
     ''' </summary>
     ''' <returns>0 if no error, error code if an error</returns>
     Public Function Main() As Integer
-        ' Returns 0 if no error, error code if an error
 
-        Dim intReturnCode As Integer
-        Dim objParseCommandLine As New clsParseCommandLine()
-        Dim blnProceed As Boolean
-        Dim blnShowForm As Boolean
-
-        intReturnCode = 0
         mInputFilePath = String.Empty
         mOutputFilePath = String.Empty
 
-        mListPORClass = New clsListPOR()
 
-        mListPORClass.AssumeSortedInputFile = False
-        mListPORClass.RemoveMultipleValues = True
-        mListPORClass.ConfidenceLevel = clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants.e95Pct
-        mListPORClass.MinFinalValueCount = 3
-        mListPORClass.ColumnCountOverride = 0
-
+        mListPORClass = New clsListPOR With {
+                .AssumeSortedInputFile = False,
+                .RemoveMultipleValues = True,
+                .ConfidenceLevel = clsGrubbsTestOutlierFilter.eclConfidenceLevelConstants.e95Pct,
+                .MinFinalValueCount = 3,
+                .ColumnCountOverride = 0
+                }
         Try
-            blnProceed = False
-            blnShowForm = False
+            Dim blnProceed = False
+            Dim blnShowForm = False
+
+            Dim objParseCommandLine As New clsParseCommandLine()
+
             If objParseCommandLine.ParseCommandLine Then
                 If SetOptionsUsingCommandLineParameters(objParseCommandLine) Then blnProceed = True
             Else
@@ -83,31 +79,31 @@ Module modMain
 
                 Dim mainWindow = New frmListPOR()
                 mainWindow.ShowDialog()
-            ElseIf Not blnProceed OrElse objParseCommandLine.NeedToShowHelp OrElse objParseCommandLine.ParameterCount = 0 OrElse String.IsNullOrWhiteSpace(mInputFilePath) Then
+            ElseIf Not blnProceed OrElse objParseCommandLine.NeedToShowHelp OrElse String.IsNullOrWhiteSpace(mInputFilePath) Then
                 ShowProgramHelp()
-                intReturnCode = -1
+                Return -1
             Else
 
                 If String.IsNullOrWhiteSpace(mOutputFilePath) Then
                     mOutputFilePath = clsListPOR.AutoGenerateOutputFileName(mInputFilePath)
                 End If
 
-                intReturnCode = mListPORClass.RemoveOutliersFromListInFile(mInputFilePath, mOutputFilePath)
+                Dim returnCode = mListPORClass.RemoveOutliersFromListInFile(mInputFilePath, mOutputFilePath)
 
-
-                If intReturnCode <> 0 Then
-                    ConsoleMsgUtils.ShowError("Error while processing: ReturnCode = " & intReturnCode)
-                    Threading.Thread.Sleep(1500)
+                If returnCode <> 0 Then
+                    ConsoleMsgUtils.ShowError("Error while processing: ReturnCode = " & returnCode)
+                    Thread.Sleep(1500)
+                    Return returnCode
                 End If
             End If
 
+            Thread.Sleep(1500)
+            Return 0
         Catch ex As Exception
             ConsoleMsgUtils.ShowError("Error while processing", ex)
-            Threading.Thread.Sleep(1500)
-            intReturnCode = -1
+            Thread.Sleep(1500)
+            Return -1
         End Try
-
-        Return intReturnCode
 
     End Function
 

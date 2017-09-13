@@ -349,26 +349,8 @@ Public Class clsListPOR
         '
 
         Dim objOutlierFilter As clsGrubbsTestOutlierFilter
-
-        Dim strColumnDelimeter As Char
-        Dim strDelimList() As Char
-        Dim strSplitLine() As String
-
-        Dim strLineIn As String
-
-        Dim columnCount As Integer
         Dim lstData = New List(Of clsFileData)
 
-        Dim strHeaderLine As String
-
-        Dim intIndexBlockStart As Integer
-
-        Dim blnDataBlockReached As Boolean
-        Dim blnAssumeFileIsSorted As Boolean
-
-        Dim strDestPathToUse As String
-
-        blnAssumeFileIsSorted = mAssumeSortedInputFile
         SetLocalErrorCode(eListPORErrorCodeCodes.NoError)
 
         mFileBytesRead = 0
@@ -376,12 +358,12 @@ Public Class clsListPOR
         mAbortProcessing = False
 
         Try
-            objOutlierFilter = New clsGrubbsTestOutlierFilter
-            With objOutlierFilter
-                .ConfidenceLevel() = mConfidenceLevel
-                .MinFinalValueCount() = mMinFinalValueCount
+            objOutlierFilter = New clsGrubbsTestOutlierFilter() With {
+                .ConfidenceLevel = mConfidenceLevel,
+                .MinFinalValueCount = mMinFinalValueCount,
                 .RemoveMultipleValues = mRemoveMultipleValues
-            End With
+            }
+
         Catch ex As Exception
             SetLocalErrorCode(eListPORErrorCodeCodes.ErrorWithGrubbsFilterClass)
             OnErrorEvent(GetErrorMessage())
@@ -389,6 +371,8 @@ Public Class clsListPOR
         End Try
 
         Try
+            Dim strDestPathToUse As String
+
             If String.IsNullOrWhiteSpace(strDestPath) OrElse String.Equals(strSourcePath, strDestPath, StringComparison.OrdinalIgnoreCase) Then
                 strDestPathToUse = AutoGenerateOutputFileName(strSourcePath)
             Else
@@ -410,18 +394,22 @@ Public Class clsListPOR
 
             Using swOutFile = New StreamWriter(New FileStream(destFile.FullName, FileMode.Create, FileAccess.Write, FileShare.Read))
 
+                Dim strColumnDelimeter As Char
+
                 ' Assume the column delimeter is a tab, unless the input file ends in .csv
                 If String.Equals(sourceFile.Extension, ".csv", StringComparison.OrdinalIgnoreCase) Then
                     strColumnDelimeter = ","c
                 Else
                     strColumnDelimeter = ControlChars.Tab
                 End If
-                strDelimList = New Char() {strColumnDelimeter}
+
+                Dim strDelimList = New Char() {strColumnDelimeter}
+                Dim columnCount As Integer
 
                 Dim percentCompleteAtStart As Integer
                 Dim nextPercentComplete As Integer
 
-                If blnAssumeFileIsSorted Then
+                If mAssumeSortedInputFile Then
                     percentCompleteAtStart = 0
                     nextPercentComplete = 100
                 Else
@@ -444,10 +432,12 @@ Public Class clsListPOR
                         columnCount = 0
                     End If
 
-                    strHeaderLine = String.Empty
+                    Dim strHeaderLine = String.Empty
+                    Dim blnDataBlockReached = False
+
                     Do While Not srInFile.EndOfStream
 
-                        strLineIn = srInFile.ReadLine()
+                        Dim strLineIn = srInFile.ReadLine()
                         mFileBytesRead += strLineIn.Length + 2
 
                         UpdatePercentComplete(mFileBytesRead, mFileLengthBytes, percentCompleteAtStart, nextPercentComplete)
@@ -516,73 +506,76 @@ Public Class clsListPOR
                                 End If
                             End If
 
-                            If blnDataBlockReached Then
-                                If columnCount = 0 Then
-                                    ' Determine the number of columns of data
+                            If Not blnDataBlockReached Then Continue Do
 
-                                    If strSplitLine.Length >= 2 AndAlso IsNumeric(strSplitLine(1)) Then
-                                        columnCount = 2
-                                    ElseIf strSplitLine.Length = 1 And IsNumeric(strSplitLine(0)) Then
-                                        columnCount = 1
-                                    Else
-                                        ' Assume columnCount = 1, even though the input file probably isn't formatted correctly
-                                        Debug.Assert(False, "Input file does not have the expected number of columns of data")
-                                        columnCount = 1
-                                    End If
-                                End If
+                            If columnCount = 0 Then
+                                ' Determine the number of columns of data
 
-                                Dim remainingCols As String
-                                If strSplitLine.Length > 2 Then
-                                    remainingCols = strSplitLine(2)
+                                If strSplitLine.Length >= 2 AndAlso IsNumeric(strSplitLine(1)) Then
+                                    columnCount = 2
+                                ElseIf strSplitLine.Length = 1 And IsNumeric(strSplitLine(0)) Then
+                                    columnCount = 1
                                 Else
-                                    remainingCols = String.Empty
+                                    ' Assume columnCount = 1, even though the input file probably isn't formatted correctly
+                                    OnWarningEvent("Input file does not have the expected number of columns of data; expecting 1 or 2 but actually " & strSplitLine.Length)
+                                    columnCount = 1
                                 End If
+                            End If
 
-                                If columnCount = 2 AndAlso strSplitLine.Length >= 2 AndAlso IsNumeric(strSplitLine(1)) Then
-                                    Try
-                                        Dim newDataPoint = New clsFileData(strSplitLine(0), strSplitLine(1), remainingCols)
-                                        lstData.Add(newDataPoint)
+                            Dim remainingCols As String
+                            If strSplitLine.Length > 2 Then
+                                remainingCols = strSplitLine(2)
+                            Else
+                                remainingCols = String.Empty
+                            End If
 
-                                    Catch ex As Exception
-                                        ' Line parsing error; skip this line
-                                    End Try
-                                ElseIf columnCount = 2 AndAlso strSplitLine.Length = 1 AndAlso IsNumeric(strSplitLine(0)) Then
-                                    Try
-                                        Dim newDataPoint = New clsFileData(strSplitLine(0), "0", String.Empty)
-                                        lstData.Add(newDataPoint)
+                            If columnCount = 2 AndAlso strSplitLine.Length >= 2 AndAlso IsNumeric(strSplitLine(1)) Then
+                                Try
+                                    Dim newDataPoint = New clsFileData(strSplitLine(0), strSplitLine(1), remainingCols)
+                                    lstData.Add(newDataPoint)
 
-                                    Catch ex As Exception
-                                        ' Line parsing error; skip this line
-                                    End Try
-                                ElseIf columnCount = 1 AndAlso strSplitLine.Length >= 1 AndAlso IsNumeric(strSplitLine(0)) Then
-                                    Try
-                                        Dim newDataPoint = New clsFileData("A", strSplitLine(0), remainingCols)
-                                        lstData.Add(newDataPoint)
+                                Catch ex As Exception
+                                    ' Line parsing error; skip this line
+                                End Try
+                            ElseIf columnCount = 2 AndAlso strSplitLine.Length = 1 AndAlso IsNumeric(strSplitLine(0)) Then
+                                Try
+                                    Dim newDataPoint = New clsFileData(strSplitLine(0), "0", String.Empty)
+                                    lstData.Add(newDataPoint)
 
-                                    Catch ex As Exception
-                                        ' Line parsing error; skip this line
-                                    End Try
-                                Else
-                                    ' Ignore the line
-                                End If
+                                Catch ex As Exception
+                                    ' Line parsing error; skip this line
+                                End Try
+                            ElseIf columnCount = 1 AndAlso strSplitLine.Length >= 1 AndAlso IsNumeric(strSplitLine(0)) Then
+                                Try
+                                    Dim newDataPoint = New clsFileData("A", strSplitLine(0), remainingCols)
+                                    lstData.Add(newDataPoint)
 
-                                If blnAssumeFileIsSorted Then
-                                    If lstData.Count > 1 Then
-                                        If lstData(lstData.Count - 1).Key <> lstData(lstData.Count - 2).Key Then
-                                            ' Parse this block
-                                            ' Need to save the latest value in udtDataNextLine since it will be removed from lstData
+                                Catch ex As Exception
+                                    ' Line parsing error; skip this line
+                                End Try
+                            Else
+                                ' Ignore the line
+                            End If
 
-                                            Dim nextDataPoint = lstData(lstData.Count - 1)
+                            If mAssumeSortedInputFile Then
+                                If lstData.Count > 1 Then
+                                    If lstData(lstData.Count - 1).Key <> lstData(lstData.Count - 2).Key Then
+                                        ' Parse this block
+                                        ' Need to save the latest value in udtDataNextLine since it will be removed from lstData
 
-                                            ParseBlock(objOutlierFilter, lstData, columnCount, swOutFile)
+                                        Dim nextDataPoint = lstData(lstData.Count - 1)
 
-                                            ' Reset lstData
-                                            lstData.Clear()
-                                            lstData.Add(nextDataPoint)
-                                        End If
+                                        lstData.RemoveAt(lstData.Count - 1)
+
+                                        ParseBlock(objOutlierFilter, lstData, columnCount, swOutFile)
+
+                                        ' Reset lstData
+                                        lstData.Clear()
+                                        lstData.Add(nextDataPoint)
                                     End If
                                 End If
                             End If
+
 
                         End If
                     Loop
@@ -596,7 +589,9 @@ Public Class clsListPOR
 
                 Dim finalDataBlock = New List(Of clsFileData)
 
-                If Not blnAssumeFileIsSorted Then
+                If mAssumeSortedInputFile Then
+                    finalDataBlock = lstData
+                Else
 
                     If lstData.Count > 0 Then
 
@@ -605,7 +600,7 @@ Public Class clsListPOR
                         ' Sort udtData by Key, then step through the list and process each block, writing to disk as we go
                         Dim sortedData = (From item In lstData Order By item.Key, item.ValueDbl Select item).ToList()
 
-                        intIndexBlockStart = 0
+                        Dim intIndexBlockStart = 0
                         percentCompleteAtStart = nextPercentComplete
                         nextPercentComplete = 100
 
@@ -634,7 +629,7 @@ Public Class clsListPOR
 
                         ' Copy the final elements into finalDataBlock, so that the last block will be written
                         For sourceIndex = intIndexBlockStart To lstData.Count - 1
-                            finalDataBlock.Add(lstData(sourceIndex))
+                            finalDataBlock.Add(sortedData(sourceIndex))
                         Next
 
                     End If
