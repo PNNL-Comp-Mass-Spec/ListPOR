@@ -379,7 +379,7 @@ Public Class frmListPOR
 #End Region
 
 #Region "Module-level Variables"
-    Private Const XML_SETTINGS_FILENAME As String = "ListPORSettings.xml"
+    Private Const XML_SETTINGS_FILE_NAME As String = "ListPORSettings.xml"
     Private Const XML_FILE_OPTIONS_SECTION As String = "Options"
 
     Private mProcessing As Boolean
@@ -389,7 +389,7 @@ Public Class frmListPOR
 
 #End Region
 
-    Private Function BrowseForFile(ByVal strCurrentPath As String, Optional ByVal strDialogTitle As String = "Select file") As String
+    Private Function BrowseForFile(strCurrentPath As String, Optional ByVal strDialogTitle As String = "Select file") As String
 
         Dim Dialog As SaveFileDialog
         Dim strCandidateParentFolderName As String
@@ -401,16 +401,16 @@ Public Class frmListPOR
             .Filter = "Text (*.txt)|*.txt|Comma separated (*.csv)|*.csv|All Files (*.*)|*.*"
 
             If strCurrentPath.Length > 0 Then
-                strCandidateParentFolderName = System.IO.Path.GetDirectoryName(strCurrentPath)
+                strCandidateParentFolderName = Path.GetDirectoryName(strCurrentPath)
 
-                If System.IO.File.Exists(strCurrentPath) Then
+                If File.Exists(strCurrentPath) Then
                     .FileName = strCurrentPath
                     .InitialDirectory = strCandidateParentFolderName
-                ElseIf System.IO.Directory.Exists(strCurrentPath) Then
+                ElseIf Directory.Exists(strCurrentPath) Then
                     .InitialDirectory = strCurrentPath
-                ElseIf System.IO.Directory.Exists(strCandidateParentFolderName) Then
+                ElseIf Directory.Exists(strCandidateParentFolderName) Then
                     .InitialDirectory = strCandidateParentFolderName
-                    .FileName = System.IO.Path.GetFileName(strCurrentPath)
+                    .FileName = Path.GetFileName(strCurrentPath)
                 End If
             End If
 
@@ -427,10 +427,10 @@ Public Class frmListPOR
         Try
             Result = Dialog.ShowDialog
         Catch ex As Exception
-            ' Bad file name 
+            ' Bad file name
             Dialog.FileName = String.Empty
             Result = DialogResult.Cancel
-            MsgBox("Invalid filename: " & ex.Message, MsgBoxStyle.Exclamation Or MsgBoxStyle.OKOnly, "Error")
+            MessageBox.Show("Invalid filename: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
         If Result = DialogResult.OK Or Result = DialogResult.Yes Then
@@ -544,24 +544,15 @@ Public Class frmListPOR
         strMessage = String.Empty
         strMessage &= "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2004" & ControlChars.NewLine & ControlChars.NewLine
 
-        strMessage &= "This is version " & System.Windows.Forms.Application.ProductVersion & " (" & PROGRAM_DATE & ")" & ControlChars.NewLine & ControlChars.NewLine
+        strMessage &= "This is version " & Application.ProductVersion & " (" & PROGRAM_DATE & ")" & ControlChars.NewLine & ControlChars.NewLine
 
-        strMessage &= "E-mail: matthew.monroe@pnl.gov or matt@alchemistmatt.com" & ControlChars.NewLine
-        strMessage &= "Website: http://ncrr.pnl.gov/ or http://www.sysbio.org/resources/staff/" & ControlChars.NewLine & ControlChars.NewLine
+        strMessage &= "E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com" & ControlChars.NewLine
+        strMessage &= "Website: http://panomics.pnnl.gov/ or http://omics.pnl.gov or http://www.sysbio.org/resources/staff/" & ControlChars.NewLine & ControlChars.NewLine
 
         strMessage &= "Licensed under the Apache License, Version 2.0; you may not use this file except in compliance with the License.  "
         strMessage &= "You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0" & ControlChars.NewLine & ControlChars.NewLine
 
-        strMessage &= "Notice: This computer software was prepared by Battelle Memorial Institute, "
-        strMessage &= "hereinafter the Contractor, under Contract No. DE-AC05-76RL0 1830 with the "
-        strMessage &= "Department of Energy (DOE).  All rights in the computer software are reserved "
-        strMessage &= "by DOE on behalf of the United States Government and the Contractor as "
-        strMessage &= "provided in the Contract.  NEITHER THE GOVERNMENT NOR THE CONTRACTOR MAKES ANY "
-        strMessage &= "WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS "
-        strMessage &= "SOFTWARE.  This notice including this sentence must appear on any copies of "
-        strMessage &= "this computer software." & ControlChars.NewLine
-
-        Windows.Forms.MessageBox.Show(strMessage, "About", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        MessageBox.Show(strMessage, "About", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
     End Sub
 
@@ -571,11 +562,12 @@ Public Class frmListPOR
         strMessage = String.Empty
         strMessage &= "This program will read the input file and examine the values to remove outliers. Typically, the first column will contain key information (text or numbers) on which to group the data. "
         strMessage &= "The second column will contain the values to examine for outliers, examining the data by groups.  If additional columns are present, they will be written to the output file along with the key and value columns. "
-        strMessage &= "Alternatively, if you provide a file with only one column of data, then all of the values will be examined en masse and the outliers removed.  If you do not provide an output file path, then the input file's path will be used, but with .filtered appended."
+        strMessage &= "Alternatively, if you provide a file with only one column of data, then all of the values will be examined en masse and the outliers removed.  If you do not provide an output file path, then the input file's path will be used, but with _filtered appeneded to the name"
 
-        Windows.Forms.MessageBox.Show(strMessage, "Overview", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        MessageBox.Show(strMessage, "Overview", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
     End Sub
+
     Private Sub ValidateFilesAndProcess()
         Dim strInputFilePath As String
         Dim strOutputFilePath As String
@@ -643,7 +635,7 @@ Public Class frmListPOR
 
     End Sub
 
-    Private Sub ValidateDataTransformOptions(ByVal blnFavorNaturalLog As Boolean)
+    Private Sub ValidateDataTransformOptions(blnFavorNaturalLog As Boolean)
         If chkUseNaturalLogValues.Checked And chkUseSymmetricValues.Checked Then
             If blnFavorNaturalLog Then
                 chkUseSymmetricValues.Checked = False
@@ -686,7 +678,7 @@ Public Class frmListPOR
             End If
 
         Catch ex As Exception
-            MsgBox("Error loading settings from XML Settings file:" & ControlChars.NewLine & ex.Message, MsgBoxStyle.Exclamation Or MsgBoxStyle.OKOnly, "Error")
+            MessageBox.Show("Error loading settings from XML Settings file: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
     End Sub
@@ -705,7 +697,7 @@ Public Class frmListPOR
                 blnSuccess = objXmlFile.SetParam(XML_FILE_OPTIONS_SECTION, "InputFilePath", txtInputFilePath.Text)
 
                 If Not blnSuccess Then
-                    Throw New System.Exception("Unknown error while setting a value.")
+                    Throw New Exception("Unknown error while setting a value.")
                 Else
                     ' Continue saving settings
 
@@ -724,39 +716,39 @@ Public Class frmListPOR
                     objXmlFile.SetParam(XML_FILE_OPTIONS_SECTION, "UseNaturalLogVAlues", chkUseNaturalLogValues.Checked)
 
                     If Not objXmlFile.SaveSettings() Then
-                        Throw New System.Exception("Unknown error while saving the file.")
+                        Throw New Exception("Unknown error while saving the file.")
                     End If
                 End If
 
             End If
 
         Catch ex As Exception
-            MsgBox("Error saving settings to XML Settings file:" & ControlChars.NewLine & ex.Message, MsgBoxStyle.Exclamation Or MsgBoxStyle.OKOnly, "Error")
+            MessageBox.Show("Error saving settings to XML Settings file: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
         End Try
 
     End Sub
 
-    Private Sub chkUseSymmetricValues_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles chkUseSymmetricValues.CheckedChanged
+    Private Sub chkUseSymmetricValues_CheckedChanged(sender As Object, e As EventArgs) Handles chkUseSymmetricValues.CheckedChanged
         ValidateDataTransformOptions(False)
     End Sub
 
-    Private Sub chkUseNaturalLogValues_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles chkUseNaturalLogValues.CheckedChanged
+    Private Sub chkUseNaturalLogValues_CheckedChanged(sender As Object, e As EventArgs) Handles chkUseNaturalLogValues.CheckedChanged
         ValidateDataTransformOptions(True)
     End Sub
 
-    Private Sub cmdBrowseForInputFile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdBrowseForInputFile.Click
+    Private Sub cmdBrowseForInputFile_Click(sender As Object, e As EventArgs) Handles cmdBrowseForInputFile.Click
         SelectInputFile()
     End Sub
 
-    Private Sub cmdBrowseForOutputFile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdBrowseForOutputFile.Click
+    Private Sub cmdBrowseForOutputFile_Click(sender As Object, e As EventArgs) Handles cmdBrowseForOutputFile.Click
         SelectOutputFile()
     End Sub
 
-    Private Sub cmdExit_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdExit.Click
+    Private Sub cmdExit_Click(sender As Object, e As EventArgs) Handles cmdExit.Click
         ExitProgram()
     End Sub
 
-    Private Sub cmdStart_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdStart.Click
+    Private Sub cmdStart_Click(sender As Object, e As EventArgs) Handles cmdStart.Click
         If mProcessing Then
             mAbortProcessing = True
         Else
@@ -764,7 +756,7 @@ Public Class frmListPOR
         End If
     End Sub
 
-    Private Sub frmListPOR_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
+    Private Sub frmListPOR_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
         PopulateComboBoxes()
         InitializeControls(False)
@@ -773,11 +765,11 @@ Public Class frmListPOR
         PositionControls()
     End Sub
 
-    Private Sub frmListPOR_Resize(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.Resize
+    Private Sub frmListPOR_Resize(sender As Object, e As EventArgs) Handles MyBase.Resize
         PositionControls()
     End Sub
 
-    Private Sub txtMinimumFinalDataPointCount_TextChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles txtMinimumFinalDataPointCount.TextChanged
+    Private Sub txtMinimumFinalDataPointCount_TextChanged(sender As Object, e As EventArgs) Handles txtMinimumFinalDataPointCount.TextChanged
         If txtMinimumFinalDataPointCount.Text.Length > 0 Then
             If Not IsNumeric(txtMinimumFinalDataPointCount.Text) Then
                 txtMinimumFinalDataPointCount.Text = "3"
@@ -785,7 +777,7 @@ Public Class frmListPOR
         End If
     End Sub
 
-    Private Sub frmListPOR_Closing(ByVal sender As Object, ByVal e As System.ComponentModel.CancelEventArgs) Handles MyBase.Closing
+    Private Sub frmListPOR_Closing(sender As Object, e As CancelEventArgs) Handles MyBase.Closing
         If mProcessing Then
             mAbortProcessing = True
         End If
@@ -793,9 +785,9 @@ Public Class frmListPOR
         XMLSaveSettings()
     End Sub
 
-    Private Sub mListPOR_ProgressUpdate() Handles mListPOR.ProgressUpdate
+    Private Sub mListPOR_ProgressUpdate(progressMessage As String, percentComplete As Single) Handles mListPOR.ProgressUpdate
         Try
-            pbarProgress.Value = mListPOR.PercentComplete
+            pbarProgress.Value = CInt(Math.Round(percentComplete, 0))
             Application.DoEvents()
 
             If mAbortProcessing Then
@@ -807,7 +799,7 @@ Public Class frmListPOR
 
     End Sub
 
-    Private Sub txtMinimumFinalDataPointCount_LostFocus(ByVal sender As Object, ByVal e As System.EventArgs) Handles txtMinimumFinalDataPointCount.LostFocus
+    Private Sub txtMinimumFinalDataPointCount_LostFocus(sender As Object, e As EventArgs) Handles txtMinimumFinalDataPointCount.LostFocus
         Try
             If CType(txtMinimumFinalDataPointCount.Text, Integer) < 2 Then
                 txtMinimumFinalDataPointCount.Text = "3"
@@ -817,30 +809,38 @@ Public Class frmListPOR
         End Try
     End Sub
 
-    Private Sub mnuEditResetToDefaults_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuEditResetToDefaults.Click
+    Private Sub mnuEditResetToDefaults_Click(sender As Object, e As EventArgs) Handles mnuEditResetToDefaults.Click
         If Not mProcessing Then
             InitializeControls(True)
         End If
     End Sub
 
-    Private Sub mnuFileSelectInputFile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuFileSelectInputFile.Click
+    Private Sub mnuFileSelectInputFile_Click(sender As Object, e As EventArgs) Handles mnuFileSelectInputFile.Click
         SelectInputFile()
     End Sub
 
-    Private Sub mnuFileSelectOutputFile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuFileSelectOutputFile.Click
+    Private Sub mnuFileSelectOutputFile_Click(sender As Object, e As EventArgs) Handles mnuFileSelectOutputFile.Click
         SelectOutputFile()
     End Sub
 
-    Private Sub mnuFileExit_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuFileExit.Click
+    Private Sub mnuFileExit_Click(sender As Object, e As EventArgs) Handles mnuFileExit.Click
         ExitProgram()
     End Sub
 
-    Private Sub mnuHelpAbout_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuHelpAbout.Click
+    Private Sub mnuHelpAbout_Click(sender As Object, e As EventArgs) Handles mnuHelpAbout.Click
         ShowAboutBox()
     End Sub
 
-    Private Sub mnuHelpOverview_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuHelpOverview.Click
+    Private Sub mnuHelpOverview_Click(sender As Object, e As EventArgs) Handles mnuHelpOverview.Click
         ShowOverview()
+    End Sub
+
+    Private Sub mListPOR_ErrorEvent(message As String, ex As Exception) Handles mListPOR.ErrorEvent
+        MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+    End Sub
+
+    Private Sub mListPOR_WarningEvent(message As String) Handles mListPOR.WarningEvent
+        MessageBox.Show(message, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
     End Sub
 
     Private Sub mListPOR_StatusEvent(message As String) Handles mListPOR.StatusEvent
