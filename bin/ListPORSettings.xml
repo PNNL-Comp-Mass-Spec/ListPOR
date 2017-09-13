@@ -1,12 +1,12 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <sections>
-  <section name="options">
-    <item key="inputfilepath" value="TestData.txt" />
-    <item key="outputfilepath" value="" />
-    <item key="iterateremoval" value="True" />
-    <item key="confidencevalueindex" value="0" />
-    <item key="minimumfinaldatapointcount" value="3" />
-    <item key="usesymmetricvalues" value="False" />
-    <item key="usenaturallogvalues" value="False" />
+  <section name="Options">
+    <item key="InputFilePath" value="TestData.txt" />
+    <item key="OutputFilePath" value="" />
+    <item key="ConfidenceValueIndex" value="0" />
+    <item key="IterateRemoval" value="True" />
+    <item key="MinimumFinalDataPointCount" value="3" />
+    <item key="UseSymmetricValues" value="False" />
+    <item key="UseNaturalLogVAlues" value="False" />
   </section>
 </sections>
