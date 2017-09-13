@@ -1,7 +1,11 @@
 Option Strict On
 
+Imports System.ComponentModel
+Imports System.IO
+Imports PRISM
+
 Public Class frmListPOR
-    Inherits System.Windows.Forms.Form
+    Inherits Form
 
 #Region " Windows Form Designer generated code "
 
@@ -30,7 +34,7 @@ Public Class frmListPOR
     Private components As System.ComponentModel.IContainer
 
     'NOTE: The following procedure is required by the Windows Form Designer
-    'It can be modified using the Windows Form Designer.  
+    'It can be modified using the Windows Form Designer.
     'Do not modify it using the code editor.
     Friend WithEvents fraOptions As System.Windows.Forms.GroupBox
     Friend WithEvents cboConfidenceLevel As System.Windows.Forms.ComboBox
@@ -45,7 +49,7 @@ Public Class frmListPOR
     Friend WithEvents lblInputFilePath As System.Windows.Forms.Label
     Friend WithEvents txtInputFilePath As System.Windows.Forms.TextBox
     Friend WithEvents fraControls As System.Windows.Forms.GroupBox
-    Friend WithEvents pbarProgress As SmoothProgressBar.SmoothProgressBar
+    Friend WithEvents pbarProgress As System.Windows.Forms.ProgressBar
     Friend WithEvents chkUseSymmetricValues As System.Windows.Forms.CheckBox
     Friend WithEvents chkUseNaturalLogValues As System.Windows.Forms.CheckBox
     Friend WithEvents MainMenu1 As System.Windows.Forms.MainMenu
@@ -63,36 +67,37 @@ Public Class frmListPOR
     Friend WithEvents mnuHelpOverview As System.Windows.Forms.MenuItem
     Friend WithEvents mnuHelpSep1 As System.Windows.Forms.MenuItem
     <System.Diagnostics.DebuggerStepThrough()> Private Sub InitializeComponent()
-        Me.fraOptions = New System.Windows.Forms.GroupBox
-        Me.chkUseNaturalLogValues = New System.Windows.Forms.CheckBox
-        Me.chkUseSymmetricValues = New System.Windows.Forms.CheckBox
-        Me.txtMinimumFinalDataPointCount = New System.Windows.Forms.TextBox
-        Me.lblMinimumFinalDataPointCount = New System.Windows.Forms.Label
-        Me.cboConfidenceLevel = New System.Windows.Forms.ComboBox
-        Me.chkIterateRemoval = New System.Windows.Forms.CheckBox
-        Me.fraFilePaths = New System.Windows.Forms.GroupBox
-        Me.cmdBrowseForOutputFile = New System.Windows.Forms.Button
-        Me.lblOutputFilePath = New System.Windows.Forms.Label
-        Me.txtOutputFilePath = New System.Windows.Forms.TextBox
-        Me.cmdBrowseForInputFile = New System.Windows.Forms.Button
-        Me.lblInputFilePath = New System.Windows.Forms.Label
-        Me.txtInputFilePath = New System.Windows.Forms.TextBox
-        Me.fraControls = New System.Windows.Forms.GroupBox
-        Me.pbarProgress = New SmoothProgressBar.SmoothProgressBar
-        Me.MainMenu1 = New System.Windows.Forms.MainMenu
-        Me.mnuFile = New System.Windows.Forms.MenuItem
-        Me.mnuFileSelectInputFile = New System.Windows.Forms.MenuItem
-        Me.mnuFileSelectOutputFile = New System.Windows.Forms.MenuItem
-        Me.mnuFileSep1 = New System.Windows.Forms.MenuItem
-        Me.mnuFileExit = New System.Windows.Forms.MenuItem
-        Me.mnuEdit = New System.Windows.Forms.MenuItem
-        Me.mnuEditResetToDefaults = New System.Windows.Forms.MenuItem
-        Me.mnuHelp = New System.Windows.Forms.MenuItem
-        Me.mnuHelpAbout = New System.Windows.Forms.MenuItem
-        Me.cmdExit = New System.Windows.Forms.Button
-        Me.cmdStart = New System.Windows.Forms.Button
-        Me.mnuHelpOverview = New System.Windows.Forms.MenuItem
-        Me.mnuHelpSep1 = New System.Windows.Forms.MenuItem
+        Me.components = New System.ComponentModel.Container()
+        Me.fraOptions = New System.Windows.Forms.GroupBox()
+        Me.chkUseNaturalLogValues = New System.Windows.Forms.CheckBox()
+        Me.chkUseSymmetricValues = New System.Windows.Forms.CheckBox()
+        Me.txtMinimumFinalDataPointCount = New System.Windows.Forms.TextBox()
+        Me.lblMinimumFinalDataPointCount = New System.Windows.Forms.Label()
+        Me.cboConfidenceLevel = New System.Windows.Forms.ComboBox()
+        Me.chkIterateRemoval = New System.Windows.Forms.CheckBox()
+        Me.fraFilePaths = New System.Windows.Forms.GroupBox()
+        Me.cmdBrowseForOutputFile = New System.Windows.Forms.Button()
+        Me.lblOutputFilePath = New System.Windows.Forms.Label()
+        Me.txtOutputFilePath = New System.Windows.Forms.TextBox()
+        Me.cmdBrowseForInputFile = New System.Windows.Forms.Button()
+        Me.lblInputFilePath = New System.Windows.Forms.Label()
+        Me.txtInputFilePath = New System.Windows.Forms.TextBox()
+        Me.fraControls = New System.Windows.Forms.GroupBox()
+        Me.pbarProgress = New System.Windows.Forms.ProgressBar()
+        Me.MainMenu1 = New System.Windows.Forms.MainMenu(Me.components)
+        Me.mnuFile = New System.Windows.Forms.MenuItem()
+        Me.mnuFileSelectInputFile = New System.Windows.Forms.MenuItem()
+        Me.mnuFileSelectOutputFile = New System.Windows.Forms.MenuItem()
+        Me.mnuFileSep1 = New System.Windows.Forms.MenuItem()
+        Me.mnuFileExit = New System.Windows.Forms.MenuItem()
+        Me.mnuEdit = New System.Windows.Forms.MenuItem()
+        Me.mnuEditResetToDefaults = New System.Windows.Forms.MenuItem()
+        Me.mnuHelp = New System.Windows.Forms.MenuItem()
+        Me.mnuHelpOverview = New System.Windows.Forms.MenuItem()
+        Me.mnuHelpSep1 = New System.Windows.Forms.MenuItem()
+        Me.mnuHelpAbout = New System.Windows.Forms.MenuItem()
+        Me.cmdExit = New System.Windows.Forms.Button()
+        Me.cmdStart = New System.Windows.Forms.Button()
         Me.fraOptions.SuspendLayout()
         Me.fraFilePaths.SuspendLayout()
         Me.fraControls.SuspendLayout()
@@ -106,18 +111,18 @@ Public Class frmListPOR
         Me.fraOptions.Controls.Add(Me.lblMinimumFinalDataPointCount)
         Me.fraOptions.Controls.Add(Me.cboConfidenceLevel)
         Me.fraOptions.Controls.Add(Me.chkIterateRemoval)
-        Me.fraOptions.Location = New System.Drawing.Point(8, 136)
+        Me.fraOptions.Location = New System.Drawing.Point(10, 157)
         Me.fraOptions.Name = "fraOptions"
-        Me.fraOptions.Size = New System.Drawing.Size(248, 144)
+        Me.fraOptions.Size = New System.Drawing.Size(297, 166)
         Me.fraOptions.TabIndex = 2
         Me.fraOptions.TabStop = False
         Me.fraOptions.Text = "Options"
         '
         'chkUseNaturalLogValues
         '
-        Me.chkUseNaturalLogValues.Location = New System.Drawing.Point(128, 96)
+        Me.chkUseNaturalLogValues.Location = New System.Drawing.Point(154, 111)
         Me.chkUseNaturalLogValues.Name = "chkUseNaturalLogValues"
-        Me.chkUseNaturalLogValues.Size = New System.Drawing.Size(112, 42)
+        Me.chkUseNaturalLogValues.Size = New System.Drawing.Size(134, 48)
         Me.chkUseNaturalLogValues.TabIndex = 5
         Me.chkUseNaturalLogValues.Text = "Use Natural Log Values (all data should be > 0)"
         '
@@ -125,57 +130,57 @@ Public Class frmListPOR
         '
         Me.chkUseSymmetricValues.Checked = True
         Me.chkUseSymmetricValues.CheckState = System.Windows.Forms.CheckState.Checked
-        Me.chkUseSymmetricValues.Location = New System.Drawing.Point(16, 96)
+        Me.chkUseSymmetricValues.Location = New System.Drawing.Point(19, 111)
         Me.chkUseSymmetricValues.Name = "chkUseSymmetricValues"
-        Me.chkUseSymmetricValues.Size = New System.Drawing.Size(112, 42)
+        Me.chkUseSymmetricValues.Size = New System.Drawing.Size(135, 48)
         Me.chkUseSymmetricValues.TabIndex = 4
         Me.chkUseSymmetricValues.Text = "Use Symmetric Values (all data should be > 0)"
         '
         'txtMinimumFinalDataPointCount
         '
-        Me.txtMinimumFinalDataPointCount.Location = New System.Drawing.Point(176, 72)
+        Me.txtMinimumFinalDataPointCount.Location = New System.Drawing.Point(211, 83)
         Me.txtMinimumFinalDataPointCount.Name = "txtMinimumFinalDataPointCount"
-        Me.txtMinimumFinalDataPointCount.Size = New System.Drawing.Size(48, 20)
+        Me.txtMinimumFinalDataPointCount.Size = New System.Drawing.Size(58, 22)
         Me.txtMinimumFinalDataPointCount.TabIndex = 3
         Me.txtMinimumFinalDataPointCount.Text = "3"
         '
         'lblMinimumFinalDataPointCount
         '
-        Me.lblMinimumFinalDataPointCount.Location = New System.Drawing.Point(8, 74)
+        Me.lblMinimumFinalDataPointCount.Location = New System.Drawing.Point(10, 85)
         Me.lblMinimumFinalDataPointCount.Name = "lblMinimumFinalDataPointCount"
-        Me.lblMinimumFinalDataPointCount.Size = New System.Drawing.Size(168, 16)
+        Me.lblMinimumFinalDataPointCount.Size = New System.Drawing.Size(201, 19)
         Me.lblMinimumFinalDataPointCount.TabIndex = 2
         Me.lblMinimumFinalDataPointCount.Text = "Minimum final data point count"
         '
         'cboConfidenceLevel
         '
         Me.cboConfidenceLevel.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
-        Me.cboConfidenceLevel.Location = New System.Drawing.Point(16, 44)
+        Me.cboConfidenceLevel.Location = New System.Drawing.Point(19, 51)
         Me.cboConfidenceLevel.Name = "cboConfidenceLevel"
-        Me.cboConfidenceLevel.Size = New System.Drawing.Size(112, 21)
+        Me.cboConfidenceLevel.Size = New System.Drawing.Size(135, 24)
         Me.cboConfidenceLevel.TabIndex = 1
         '
         'chkIterateRemoval
         '
-        Me.chkIterateRemoval.Location = New System.Drawing.Point(16, 16)
+        Me.chkIterateRemoval.Location = New System.Drawing.Point(19, 18)
         Me.chkIterateRemoval.Name = "chkIterateRemoval"
-        Me.chkIterateRemoval.Size = New System.Drawing.Size(184, 24)
+        Me.chkIterateRemoval.Size = New System.Drawing.Size(221, 28)
         Me.chkIterateRemoval.TabIndex = 0
         Me.chkIterateRemoval.Text = "Repeatedly remove outliers"
         '
         'fraFilePaths
         '
         Me.fraFilePaths.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
-                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.fraFilePaths.Controls.Add(Me.cmdBrowseForOutputFile)
         Me.fraFilePaths.Controls.Add(Me.lblOutputFilePath)
         Me.fraFilePaths.Controls.Add(Me.txtOutputFilePath)
         Me.fraFilePaths.Controls.Add(Me.cmdBrowseForInputFile)
         Me.fraFilePaths.Controls.Add(Me.lblInputFilePath)
         Me.fraFilePaths.Controls.Add(Me.txtInputFilePath)
-        Me.fraFilePaths.Location = New System.Drawing.Point(8, 16)
+        Me.fraFilePaths.Location = New System.Drawing.Point(10, 18)
         Me.fraFilePaths.Name = "fraFilePaths"
-        Me.fraFilePaths.Size = New System.Drawing.Size(504, 112)
+        Me.fraFilePaths.Size = New System.Drawing.Size(573, 130)
         Me.fraFilePaths.TabIndex = 1
         Me.fraFilePaths.TabStop = False
         Me.fraFilePaths.Text = "File Paths"
@@ -183,65 +188,65 @@ Public Class frmListPOR
         'cmdBrowseForOutputFile
         '
         Me.cmdBrowseForOutputFile.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.cmdBrowseForOutputFile.Location = New System.Drawing.Point(440, 80)
+        Me.cmdBrowseForOutputFile.Location = New System.Drawing.Point(497, 92)
         Me.cmdBrowseForOutputFile.Name = "cmdBrowseForOutputFile"
-        Me.cmdBrowseForOutputFile.Size = New System.Drawing.Size(56, 20)
+        Me.cmdBrowseForOutputFile.Size = New System.Drawing.Size(67, 23)
         Me.cmdBrowseForOutputFile.TabIndex = 5
         Me.cmdBrowseForOutputFile.Text = "Br&owse"
         '
         'lblOutputFilePath
         '
-        Me.lblOutputFilePath.Location = New System.Drawing.Point(16, 64)
+        Me.lblOutputFilePath.Location = New System.Drawing.Point(19, 74)
         Me.lblOutputFilePath.Name = "lblOutputFilePath"
-        Me.lblOutputFilePath.Size = New System.Drawing.Size(72, 16)
+        Me.lblOutputFilePath.Size = New System.Drawing.Size(120, 18)
         Me.lblOutputFilePath.TabIndex = 3
         Me.lblOutputFilePath.Text = "Output file path"
         '
         'txtOutputFilePath
         '
         Me.txtOutputFilePath.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
-                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.txtOutputFilePath.Location = New System.Drawing.Point(16, 80)
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.txtOutputFilePath.Location = New System.Drawing.Point(19, 92)
         Me.txtOutputFilePath.Name = "txtOutputFilePath"
-        Me.txtOutputFilePath.Size = New System.Drawing.Size(416, 20)
+        Me.txtOutputFilePath.Size = New System.Drawing.Size(468, 22)
         Me.txtOutputFilePath.TabIndex = 4
         Me.txtOutputFilePath.Text = "Output file"
         '
         'cmdBrowseForInputFile
         '
         Me.cmdBrowseForInputFile.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.cmdBrowseForInputFile.Location = New System.Drawing.Point(440, 32)
+        Me.cmdBrowseForInputFile.Location = New System.Drawing.Point(497, 37)
         Me.cmdBrowseForInputFile.Name = "cmdBrowseForInputFile"
-        Me.cmdBrowseForInputFile.Size = New System.Drawing.Size(56, 20)
+        Me.cmdBrowseForInputFile.Size = New System.Drawing.Size(67, 23)
         Me.cmdBrowseForInputFile.TabIndex = 2
         Me.cmdBrowseForInputFile.Text = "&Browse"
         '
         'lblInputFilePath
         '
-        Me.lblInputFilePath.Location = New System.Drawing.Point(16, 16)
+        Me.lblInputFilePath.Location = New System.Drawing.Point(19, 18)
         Me.lblInputFilePath.Name = "lblInputFilePath"
-        Me.lblInputFilePath.Size = New System.Drawing.Size(80, 16)
+        Me.lblInputFilePath.Size = New System.Drawing.Size(120, 19)
         Me.lblInputFilePath.TabIndex = 0
         Me.lblInputFilePath.Text = "Input file path"
         '
         'txtInputFilePath
         '
         Me.txtInputFilePath.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
-                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.txtInputFilePath.Location = New System.Drawing.Point(16, 32)
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.txtInputFilePath.Location = New System.Drawing.Point(19, 37)
         Me.txtInputFilePath.Name = "txtInputFilePath"
-        Me.txtInputFilePath.Size = New System.Drawing.Size(416, 20)
+        Me.txtInputFilePath.Size = New System.Drawing.Size(468, 22)
         Me.txtInputFilePath.TabIndex = 1
         Me.txtInputFilePath.Text = "Input file"
         '
         'fraControls
         '
         Me.fraControls.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
-                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.fraControls.Controls.Add(Me.pbarProgress)
-        Me.fraControls.Location = New System.Drawing.Point(264, 136)
+        Me.fraControls.Location = New System.Drawing.Point(317, 157)
         Me.fraControls.Name = "fraControls"
-        Me.fraControls.Size = New System.Drawing.Size(247, 48)
+        Me.fraControls.Size = New System.Drawing.Size(265, 55)
         Me.fraControls.TabIndex = 3
         Me.fraControls.TabStop = False
         Me.fraControls.Text = "Progress"
@@ -249,14 +254,12 @@ Public Class frmListPOR
         'pbarProgress
         '
         Me.pbarProgress.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
-                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.pbarProgress.Location = New System.Drawing.Point(8, 16)
-        Me.pbarProgress.Maximum = 100
-        Me.pbarProgress.Minimum = 0
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.pbarProgress.Location = New System.Drawing.Point(10, 18)
         Me.pbarProgress.Name = "pbarProgress"
-        Me.pbarProgress.Size = New System.Drawing.Size(224, 24)
+        Me.pbarProgress.Size = New System.Drawing.Size(237, 28)
+        Me.pbarProgress.Style = System.Windows.Forms.ProgressBarStyle.Continuous
         Me.pbarProgress.TabIndex = 2
-        Me.pbarProgress.Value = 0
         '
         'MainMenu1
         '
@@ -305,6 +308,16 @@ Public Class frmListPOR
         Me.mnuHelp.MenuItems.AddRange(New System.Windows.Forms.MenuItem() {Me.mnuHelpOverview, Me.mnuHelpSep1, Me.mnuHelpAbout})
         Me.mnuHelp.Text = "&Help"
         '
+        'mnuHelpOverview
+        '
+        Me.mnuHelpOverview.Index = 0
+        Me.mnuHelpOverview.Text = "&Overview"
+        '
+        'mnuHelpSep1
+        '
+        Me.mnuHelpSep1.Index = 1
+        Me.mnuHelpSep1.Text = "-"
+        '
         'mnuHelpAbout
         '
         Me.mnuHelpAbout.Index = 2
@@ -312,17 +325,17 @@ Public Class frmListPOR
         '
         'cmdExit
         '
-        Me.cmdExit.Location = New System.Drawing.Point(360, 200)
+        Me.cmdExit.Location = New System.Drawing.Point(432, 231)
         Me.cmdExit.Name = "cmdExit"
-        Me.cmdExit.Size = New System.Drawing.Size(56, 20)
+        Me.cmdExit.Size = New System.Drawing.Size(67, 23)
         Me.cmdExit.TabIndex = 7
         Me.cmdExit.Text = "E&xit"
         '
         'cmdStart
         '
-        Me.cmdStart.Location = New System.Drawing.Point(272, 200)
+        Me.cmdStart.Location = New System.Drawing.Point(326, 231)
         Me.cmdStart.Name = "cmdStart"
-        Me.cmdStart.Size = New System.Drawing.Size(56, 20)
+        Me.cmdStart.Size = New System.Drawing.Size(68, 23)
         Me.cmdStart.TabIndex = 6
         Me.cmdStart.Text = "&Start"
         '
@@ -338,21 +351,24 @@ Public Class frmListPOR
         '
         'frmListPOR
         '
-        Me.AutoScaleBaseSize = New System.Drawing.Size(5, 13)
-        Me.ClientSize = New System.Drawing.Size(520, 290)
+        Me.AutoScaleBaseSize = New System.Drawing.Size(6, 15)
+        Me.ClientSize = New System.Drawing.Size(593, 407)
         Me.Controls.Add(Me.cmdExit)
         Me.Controls.Add(Me.cmdStart)
         Me.Controls.Add(Me.fraControls)
         Me.Controls.Add(Me.fraFilePaths)
         Me.Controls.Add(Me.fraOptions)
         Me.Menu = Me.MainMenu1
-        Me.MinimumSize = New System.Drawing.Size(475, 0)
+        Me.MinimumSize = New System.Drawing.Size(570, 0)
         Me.Name = "frmListPOR"
         Me.Text = "ListPOR - List Parser for Outlier Removal"
         Me.fraOptions.ResumeLayout(False)
+        Me.fraOptions.PerformLayout()
         Me.fraFilePaths.ResumeLayout(False)
+        Me.fraFilePaths.PerformLayout()
         Me.fraControls.ResumeLayout(False)
         Me.ResumeLayout(False)
+        Me.PerformLayout()
 
     End Sub
 
