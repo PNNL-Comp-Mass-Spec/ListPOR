@@ -462,9 +462,9 @@ Public Class frmListPOR
     Private Function GetSettingsFilePath() As String
 
         Dim strSettingsFilePathLocal As String
-        strSettingsFilePathLocal = clsProcessFilesOrFoldersBase.GetSettingsFilePathLocal("ListPOR", XML_SETTINGS_FILE_NAME)
+        strSettingsFilePathLocal = PRISM.FileProcessor.ProcessFilesBase.GetSettingsFilePathLocal("ListPOR", XML_SETTINGS_FILE_NAME)
 
-        clsProcessFilesOrFoldersBase.CreateSettingsFileIfMissing(strSettingsFilePathLocal)
+        PRISM.FileProcessor.ProcessFilesBase.CreateSettingsFileIfMissing(strSettingsFilePathLocal)
 
         Return strSettingsFilePathLocal
 
