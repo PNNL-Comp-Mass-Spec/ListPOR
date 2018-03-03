@@ -34,9 +34,9 @@ Module modMain
     Private Declare Auto Function ShowWindow Lib "user32.dll" (hWnd As IntPtr, nCmdShow As Integer) As Boolean
     Private Declare Auto Function GetConsoleWindow Lib "kernel32.dll" () As IntPtr
     Private Const SW_HIDE As Integer = 0
-    ' Private Const SW_SHOW As Integer = 5
+    Private Const SW_SHOW As Integer = 5
 
-    Public Const PROGRAM_DATE As String = "September 13, 2017"
+    Public Const PROGRAM_DATE As String = "March 2, 2018"
 
     Private WithEvents mListPORClass As clsListPOR
     Private mInputFilePath As String
@@ -80,6 +80,9 @@ Module modMain
 
                 Dim mainWindow = New frmListPOR()
                 mainWindow.ShowDialog()
+
+                ShowWindow(hWndConsole, SW_SHOW)
+
             ElseIf Not blnProceed OrElse objParseCommandLine.NeedToShowHelp OrElse String.IsNullOrWhiteSpace(mInputFilePath) Then
                 ShowProgramHelp()
                 Return -1
