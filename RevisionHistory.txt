@@ -1,5 +1,8 @@
 ListPOR Change Log
 
+Version 1.3.7947; October 4, 2021
+	- Update to .NET 4.8
+
 Version 1.3.6635; March 2, 2018
 	- Fix bug that failed to show the console after closing the GUI
 
