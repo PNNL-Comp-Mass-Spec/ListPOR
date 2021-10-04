@@ -445,7 +445,7 @@ Public Class clsListPOR
 
                         If mAbortProcessing Then Exit Do
 
-                        If Not strLineIn Is Nothing AndAlso strLineIn.Length > 0 Then
+                        If strLineIn IsNot Nothing AndAlso strLineIn.Length > 0 Then
                             ' Split the line, allowing at most 3 columns (if more than 3, then all data is lumped into the third column)
                             Dim strSplitLine = strLineIn.Split(strDelimList, 3)
 
