@@ -9,8 +9,8 @@ Imports PRISM
 ' Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
 ' Program started August 13, 2004
 
-' E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com
-' Website: http://panomics.pnnl.gov/ or http://omics.pnl.gov or http://www.sysbio.org/resources/staff/
+' E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov
+' Website: https://github.com/PNNL-Comp-Mass-Spec/ or https://panomics.pnnl.gov/ or https://www.pnnl.gov/integrative-omics
 ' -------------------------------------------------------------------------------
 '
 ' Licensed under the Apache License, Version 2.0; you may not use this file except
@@ -36,7 +36,7 @@ Module modMain
     Private Const SW_HIDE As Integer = 0
     Private Const SW_SHOW As Integer = 5
 
-    Public Const PROGRAM_DATE As String = "March 2, 2018"
+    Public Const PROGRAM_DATE As String = "October 4, 2021"
 
     Private WithEvents mListPORClass As clsListPOR
     Private mInputFilePath As String
@@ -214,8 +214,8 @@ Module modMain
 
             Console.WriteLine("This is version " & Application.ProductVersion & " (" & PROGRAM_DATE & ")")
 
-            Console.WriteLine("E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com")
-            Console.WriteLine("Website: http://panomics.pnnl.gov/ or http://omics.pnl.gov or http://www.sysbio.org/resources/staff/")
+            Console.WriteLine("E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov")
+            Console.WriteLine("Website: https://github.com/PNNL-Comp-Mass-Spec/ or https://panomics.pnnl.gov/ or https://www.pnnl.gov/integrative-omics")
             Console.WriteLine()
 
             Console.WriteLine("Licensed under the Apache License, Version 2.0; you may not use this file except in compliance with the License.")

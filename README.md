@@ -36,7 +36,7 @@ converted back to a normal value before being written.
 
 ## Installation
 
-* Download ListPOR_Setup.zip from [Omics.pnl.gov](https://omics.pnl.gov/software/ListPOR)
+* Download ListPOR_Setup.zip from [GitHub](https://github.com/PNNL-Comp-Mass-Spec/ListPOR/releases)
 * Extract the files
 * Run ListPOR_setup.exe
 
@@ -79,8 +79,9 @@ but not utilized for comparison purposes.
 ## Contacts
 
 Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) \
-E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com\
-Website: http://panomics.pnnl.gov/ or http://omics.pnl.gov or http://www.sysbio.org/resources/staff/
+E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov\
+Website: https://github.com/PNNL-Comp-Mass-Spec/ or https://panomics.pnnl.gov/ or https://www.pnnl.gov/integrative-omics\
+Source code: https://github.com/PNNL-Comp-Mass-Spec/ListPOR
 
 ## License
 
