@@ -123,6 +123,7 @@
     <Compile Include="frmListPOR.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="GlobalSuppressions.vb" />
     <Compile Include="modMain.vb">
       <SubType>Code</SubType>
     </Compile>
