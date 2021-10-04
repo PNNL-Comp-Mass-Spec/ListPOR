@@ -10,7 +10,7 @@ Imports System.Linq
 ''' For each block, filters the data using clsGrubbsTestOutlierFilter
 ''' </summary>
 Public Class clsListPOR
-    Inherits PRISM.clsEventNotifier
+    Inherits PRISM.EventNotifier
 
 #Region "Enums"
 
