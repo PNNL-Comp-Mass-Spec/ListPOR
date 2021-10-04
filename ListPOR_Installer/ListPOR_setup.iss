@@ -17,11 +17,14 @@ Source: ..\bin\ListPOR.pdb                           ; DestDir: {app}
 Source: ..\bin\MathNet.Numerics.dll                  ; DestDir: {app}
 Source: ..\bin\PRISM.dll                             ; DestDir: {app}
 Source: ..\bin\ListPORSettings.xml                   ; DestDir: {app}
-                                       
+
 Source: ..\README.md                                 ; DestDir: {app}
 Source: ..\RevisionHistory.txt                       ; DestDir: {app}
+Source: ..\Docs\Run_Program.bat                      ; DestDir: {app}
 Source: ..\Docs\TestData.txt                         ; DestDir: {app}
-Source: ..\Docs\TestData_filtered.txt                ; DestDir: {app}
+Source: ..\Docs\TestData_filtered_95pct.txt          ; DestDir: {app}
+Source: ..\Docs\TestData_filtered_97pct.txt          ; DestDir: {app}
+Source: ..\Docs\TestData_filtered_99pct.txt          ; DestDir: {app}
 Source: ..\Docs\TestData_NoCategories.txt            ; DestDir: {app}
 Source: ..\Docs\TestData_NoCategories_filtered.txt   ; DestDir: {app}
 
@@ -45,6 +48,8 @@ AppPublisher=Pacific Northwest National Laboratory
 AppPublisherURL=http://omics.pnl.gov/software
 AppSupportURL=http://omics.pnl.gov/software
 AppUpdatesURL=http://omics.pnl.gov/software
+ArchitecturesAllowed=x64 x86
+ArchitecturesInstallIn64BitMode=x64
 DefaultDirName={autopf}\ListPOR
 DefaultGroupName=PAST Toolkit
 AppCopyright=© PNNL
