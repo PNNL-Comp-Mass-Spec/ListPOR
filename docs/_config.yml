@@ -2,3 +2,6 @@
 name: ListPOR
 description: The ListPOR program (List Parser for Outlier Removal) can be used to read a file containing columns of grouped values and remove outlier values using Grubb's test. 
 url: https://pnnl-comp-mass-spec.github.io/ListPOR/
+
+# Google Analytics
+google_analytics: G-LXXKP1N66C
